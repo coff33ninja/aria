@@ -23,10 +23,50 @@ import {
 import { callReal } from "@/lib/realEngine";
 import { searchWeb, formatResearch } from "@/lib/runtime/tools";
 import { runJs } from "@/lib/runtime/exec";
-import { useOS } from "./useOS";
+import { localComplete, localReady } from "@/lib/runtime/localBrain";
+import { useOS, type Settings } from "./useOS";
 import { speak } from "@/lib/voice";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+type Turn = { role: "user" | "assistant"; content: string };
+
+/**
+ * Brain-agnostic completion. Tries the selected real brain (local in-browser
+ * model, or BYO-key API); returns null to signal "fall back to the simulated
+ * engine". Agents are written once and run on whichever brain is active.
+ */
+async function think(
+  settings: Settings,
+  system: string,
+  prompt: string,
+  history: Turn[] = [],
+): Promise<string | null> {
+  if (settings.brain === "local" && localReady(settings.localModel)) {
+    try {
+      return await localComplete(system, prompt, history);
+    } catch {
+      return null;
+    }
+  }
+  if (settings.brain === "api" && settings.apiKey) {
+    try {
+      return await callReal(
+        {
+          provider: settings.apiProvider,
+          apiKey: settings.apiKey,
+          model: settings.apiModel || undefined,
+        },
+        system,
+        prompt,
+        history,
+      );
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
 /** Stream `full` out in small chunks, calling onChunk with the text-so-far. */
 async function typeStream(
@@ -248,28 +288,11 @@ export const useAria = create<AriaState>()(
             content: m.text,
           }));
 
-        let reply: string;
-        if (os.settings.useReal && os.settings.apiKey) {
-          try {
-            const sys = `You are Aria, a warm, concise AI operating system assistant with a team of agents. Reply in 1-3 sentences.${
-              ctx.name ? ` The user's name is ${ctx.name}.` : ""
-            }`;
-            reply = await callReal(
-              {
-                provider: os.settings.apiProvider,
-                apiKey: os.settings.apiKey,
-                model: os.settings.apiModel || undefined,
-              },
-              sys,
-              trimmed,
-              history,
-            );
-          } catch {
-            reply = smallTalk(trimmed, ctx);
-          }
-        } else {
-          reply = smallTalk(trimmed, ctx);
-        }
+        const sys = `You are Aria, a warm, concise AI operating system assistant with a team of agents. Reply in 1-3 sentences.${
+          ctx.name ? ` The user's name is ${ctx.name}.` : ""
+        }`;
+        const llm = await think(os.settings, sys, trimmed, history);
+        const reply = llm ?? smallTalk(trimmed, ctx);
         await typeStream(reply, patchAria);
         finishAria();
         set({ busy: false });
@@ -278,7 +301,14 @@ export const useAria = create<AriaState>()(
 
       runMission: async (prompt) => {
         const os = useOS.getState();
-        const real = os.settings.useReal && !!os.settings.apiKey;
+        const useLocal =
+          os.settings.brain === "local" && localReady(os.settings.localModel);
+        const useApi = os.settings.brain === "api" && !!os.settings.apiKey;
+        const engineKind: Mission["engine"] = useLocal
+          ? "local"
+          : useApi
+            ? "real"
+            : "sim";
         const { title, subtasks } = planMission(prompt);
         const mission: Mission = {
           id: nanoid(8),
@@ -288,7 +318,7 @@ export const useAria = create<AriaState>()(
           createdAt: Date.now(),
           subtasks,
           result: "",
-          engine: real ? "real" : "sim",
+          engine: engineKind,
         };
         set((s) => ({
           missions: [mission, ...s.missions],
@@ -335,12 +365,6 @@ export const useAria = create<AriaState>()(
           post({ from: task.agentId, text: `Picking up: ${task.title}.` });
           await sleep(250 + Math.random() * 400);
 
-          const cfg = {
-            provider: os.settings.apiProvider,
-            apiKey: os.settings.apiKey,
-            model: os.settings.apiModel || undefined,
-          };
-
           // Real tool use: Sage searches the live web before reasoning.
           let research = "";
           if (task.agentId === "sage") {
@@ -357,34 +381,22 @@ export const useAria = create<AriaState>()(
             }
           }
 
+          // One brain-agnostic call; null → fall back to the simulated engine.
           let full: string;
           if (task.agentId === "sage" && research) {
-            // Ground Sage's output in the real fetched data.
-            if (real) {
-              try {
-                full = await callReal(
-                  cfg,
-                  ag.system,
-                  `Mission: ${prompt}\n\nYou ran a web_search and got these LIVE results:\n\n${research}\n\nDeliver your subtask "${task.title}": synthesize the key findings in tight bullets and cite the sources.`,
-                );
-              } catch {
-                full = research;
-              }
-            } else {
-              full = research;
-            }
-          } else if (real) {
-            try {
-              full = await callReal(
-                cfg,
-                ag.system,
-                `Mission: ${prompt}\n\nYour subtask: ${task.title}\nRespond as ${ag.name} (${ag.role}).`,
-              );
-            } catch {
-              full = simulateOutput(task.agentId, prompt);
-            }
+            const llm = await think(
+              os.settings,
+              ag.system,
+              `Mission: ${prompt}\n\nYou ran a web_search and got these LIVE results:\n\n${research}\n\nDeliver your subtask "${task.title}": synthesize the key findings in tight bullets and cite the sources.`,
+            );
+            full = llm ?? research;
           } else {
-            full = simulateOutput(task.agentId, prompt);
+            const llm = await think(
+              os.settings,
+              ag.system,
+              `Mission: ${prompt}\n\nYour subtask: ${task.title}\nRespond as ${ag.name} (${ag.role}).`,
+            );
+            full = llm ?? simulateOutput(task.agentId, prompt);
           }
 
           // Real tool use: Forge actually RUNS the JS it writes.

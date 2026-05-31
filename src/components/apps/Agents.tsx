@@ -186,7 +186,12 @@ export default function Agents() {
                 <div className="min-w-0">
                   <div className="truncate text-[14px] font-semibold text-text0">{mission.title}</div>
                   <div className="text-[11px] text-text3">
-                    {mission.engine === "real" ? "Live LLM" : "Simulated"} ·{" "}
+                    {mission.engine === "local"
+                      ? "Local LLM"
+                      : mission.engine === "real"
+                        ? "Live LLM"
+                        : "Simulated"}{" "}
+                    ·{" "}
                     {mission.subtasks.length} steps
                     {missions.length > 1 && ` · ${missions.length} this session`}
                   </div>

@@ -50,7 +50,7 @@ UI lights up with a live LLM.
 | 🔒 **Clear data story** | A visible badge everywhere: *on-device* (nothing leaves your browser) vs *live* (sent to your provider with your key, never to us). |
 | 📊 **Live dashboard** | Real-time throughput charts, agent utilization, success ring, token usage — all wired to your actual session. |
 | 🖧 **Agent shell** | A real terminal (`run`, `ask`, `agents`, `cat`, `neofetch`…) that drives the same engine. |
-| 🔌 **Bring your own key** | Simulated by default; flip one switch to run on OpenAI or Anthropic. Your key stays in your browser. |
+| 🧠 **A real LLM in your browser** | "Download a brain" — a small Llama/Qwen runs **entirely on your machine via WebGPU** (WebLLM). No server, no key, fully private. Plus simulated + bring-your-own-key brains, all behind one interface. |
 | 🌑 **Crafted dark UI** | Glassmorphism, spring physics, custom SVG charts, five wallpapers, accent theming — zero heavyweight UI libs. |
 
 ---
@@ -145,17 +145,22 @@ Deploys cleanly to **Vercel** (or any Node host) out of the box.
 
 ---
 
-## 🔌 Bring your own LLM (optional)
+## 🧠 Three brains, one interface
 
-By default Aria runs a self-contained **simulated** agent engine — great for demos and totally offline.
-To use a real model:
+Aria's agents are **brain-agnostic** — written once, they run on whichever intelligence source you
+pick in **Settings → AI Engine**:
 
-1. Open **Settings → AI Engine**
-2. Toggle **Use a real LLM**
-3. Pick a provider (**OpenAI** or **Anthropic**) and paste your API key
+1. **Simulated** *(default)* — a deterministic offline engine. Works the instant you clone, no key,
+   no cost. It still uses the real tools, so missions produce real research, real code output, and
+   real files.
+2. **Local** — *download a brain*: a small Llama 3.2 / Qwen 2.5 model runs **entirely in your
+   browser via WebGPU** (WebLLM). No server, no key, nothing leaves your machine. Downloaded once
+   and cached. (Needs Chrome/Edge desktop with WebGPU.)
+3. **API key** — bring your own **OpenAI** or **Anthropic** key for maximum capability. The key is
+   stored only in your browser and forwarded per-request through a thin proxy (`/api/chat`) — Aria's
+   servers never persist it.
 
-That's it. The key is stored only in your browser's `localStorage` and is forwarded per-request straight
-to the provider through a thin proxy route (`/api/chat`) — Aria's servers never persist it.
+The Assistant always shows which brain is active and what that means for your data.
 
 ---
 

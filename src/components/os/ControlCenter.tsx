@@ -92,12 +92,20 @@ export default function ControlCenter() {
                 color="#22d3ee"
               />
               <Tile
-                active={settings.useReal && !!settings.apiKey}
-                onClick={() => setSettings({ useReal: !settings.useReal })}
-                icon="Cpu"
-                label="Real LLM"
-                sub={settings.apiKey ? (settings.useReal ? "Live" : "Off") : "No key"}
-                color="#34d399"
+                onClick={() => {
+                  setOpen(false);
+                  useOS.getState().openApp("settings");
+                }}
+                icon="BrainCircuit"
+                label="Brain"
+                sub={
+                  settings.brain === "local"
+                    ? "Local"
+                    : settings.brain === "api"
+                      ? "API key"
+                      : "Simulated"
+                }
+                color="#a78bfa"
               />
               <Tile
                 active={settings.reduceMotion}

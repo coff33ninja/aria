@@ -12,6 +12,7 @@ import {
   recognitionSupported,
   stopSpeaking,
 } from "@/lib/voice";
+import { localReady } from "@/lib/runtime/localBrain";
 
 const SUGGESTIONS = [
   "Research the best note-taking apps in 2025",
@@ -27,8 +28,18 @@ export default function Assistant() {
   const clearChat = useAria((s) => s.clearChat);
   const voiceEnabled = useOS((s) => s.settings.voiceEnabled);
   const setVoiceMode = useOS((s) => s.setVoiceMode);
-  const useReal = useOS((s) => s.settings.useReal && !!s.settings.apiKey);
+  const brain = useOS((s) => s.settings.brain);
+  const apiKey = useOS((s) => s.settings.apiKey);
   const provider = useOS((s) => s.settings.apiProvider);
+  const localModel = useOS((s) => s.settings.localModel);
+
+  const local = brain === "local" && localReady(localModel);
+  const live = brain === "api" && !!apiKey;
+  const badge = local
+    ? { icon: "Cpu", color: "#a78bfa", label: "Local", title: "Runs in your browser — fully private" }
+    : live
+      ? { icon: "Globe", color: "#22d3ee", label: `Live · ${provider}`, title: `Sent to ${provider} with your key` }
+      : { icon: "ShieldCheck", color: "#34d399", label: "On-device", title: "Nothing leaves your browser" };
 
   const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
@@ -111,18 +122,11 @@ export default function Assistant() {
         </div>
         <span
           className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]"
-          style={{
-            background: useReal ? "#22d3ee22" : "#34d39922",
-            color: useReal ? "#22d3ee" : "#34d399",
-          }}
-          title={
-            useReal
-              ? `Live — your messages go to ${provider} with your key`
-              : "On-device — nothing leaves your browser"
-          }
+          style={{ background: `${badge.color}22`, color: badge.color }}
+          title={badge.title}
         >
-          <Icon name={useReal ? "Globe" : "ShieldCheck"} size={11} />
-          {useReal ? "Live" : "On-device"}
+          <Icon name={badge.icon} size={11} />
+          {badge.label}
         </span>
         {recognitionSupported() && (
           <button

@@ -28,15 +28,22 @@ export interface Notif {
   ts: number;
 }
 
+export type BrainKind = "simulated" | "api" | "local";
+
 export interface Settings {
   accent: string;
   wallpaper: WallpaperId;
   voiceEnabled: boolean;
   reduceMotion: boolean;
+  /** which intelligence source agents use */
+  brain: BrainKind;
+  /** legacy mirror of brain === "api"; kept for older persisted state */
   useReal: boolean;
   apiProvider: "openai" | "anthropic";
   apiKey: string;
   apiModel: string;
+  /** selected in-browser model id */
+  localModel: string;
 }
 
 interface OSState {
@@ -79,10 +86,12 @@ const DEFAULT_SETTINGS: Settings = {
   wallpaper: "aurora",
   voiceEnabled: true,
   reduceMotion: false,
+  brain: "simulated",
   useReal: false,
   apiProvider: "openai",
   apiKey: "",
   apiModel: "",
+  localModel: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
 };
 
 const MENU_BAR_H = 30;
@@ -229,6 +238,15 @@ export const useOS = create<OSState>()(
       name: "aria-os",
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ settings: s.settings }),
+      // deep-merge so newly-added settings keys keep their defaults
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<OSState>;
+        return {
+          ...current,
+          ...p,
+          settings: { ...current.settings, ...(p.settings ?? {}) },
+        };
+      },
     },
   ),
 );

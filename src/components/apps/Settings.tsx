@@ -1,11 +1,108 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useOS } from "@/store/useOS";
 import { useAria } from "@/store/useAria";
 import { WALLPAPERS } from "@/lib/apps";
 import Icon from "@/components/ui/Icon";
+import {
+  LOCAL_MODELS,
+  loadLocalModel,
+  localReady,
+  webgpuAvailable,
+  type LoadProgress,
+} from "@/lib/runtime/localBrain";
 
 const ACCENTS = ["#7c6cff", "#22d3ee", "#34d399", "#f472b6", "#f59e0b", "#fb7185"];
+
+function LocalBrainPanel() {
+  const localModel = useOS((s) => s.settings.localModel);
+  const set = useOS((s) => s.setSettings);
+  const [prog, setProg] = useState<LoadProgress | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [err, setErr] = useState("");
+  const gpu = webgpuAvailable();
+
+  useEffect(() => setReady(localReady(localModel)), [localModel]);
+
+  const load = async () => {
+    setErr("");
+    setLoading(true);
+    setProg({ progress: 0, text: "Starting…" });
+    try {
+      await loadLocalModel(localModel, setProg);
+      setReady(true);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const model = LOCAL_MODELS.find((m) => m.id === localModel);
+
+  return (
+    <>
+      {!gpu && (
+        <Row title="WebGPU" desc="Required to run a model in the browser">
+          <span className="text-[11px] text-bad">Use Chrome / Edge desktop</span>
+        </Row>
+      )}
+      <Row title="Model" desc="Runs fully on your machine — nothing ever leaves the browser">
+        <select
+          value={localModel}
+          onChange={(e) => {
+            set({ localModel: e.target.value });
+            setReady(localReady(e.target.value));
+          }}
+          className="w-52 rounded-lg border border-line bg-black/30 px-2.5 py-1.5 text-[12px] text-text0 outline-none focus:border-accent"
+        >
+          {LOCAL_MODELS.map((m) => (
+            <option key={m.id} value={m.id} className="bg-bg2">
+              {m.label} · {m.size}
+            </option>
+          ))}
+        </select>
+      </Row>
+      <Row
+        title={ready ? "Brain ready" : "Download a brain"}
+        desc={ready ? "Loaded & private — agents run on it now" : model?.note}
+      >
+        {ready ? (
+          <span className="flex items-center gap-1.5 text-[12px] text-good">
+            <Icon name="Check" size={14} /> Loaded
+          </span>
+        ) : (
+          <button
+            onClick={load}
+            disabled={loading || !gpu}
+            className="flex items-center gap-1.5 rounded-lg accent-grad px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-50"
+          >
+            {loading ? (
+              <Icon name="Loader" size={13} className="animate-spin-slow" />
+            ) : (
+              <Icon name="Download" size={13} />
+            )}
+            {loading ? "Downloading" : "Download"}
+          </button>
+        )}
+      </Row>
+      {loading && prog && (
+        <div className="px-1 pb-2 pt-1">
+          <div className="h-1 overflow-hidden rounded-full bg-white/8">
+            <div
+              className="h-full accent-grad transition-all"
+              style={{ width: `${Math.round((prog.progress || 0) * 100)}%` }}
+            />
+          </div>
+          <div className="mt-1.5 text-[10px] text-text3">{prog.text}</div>
+        </div>
+      )}
+      {err && <div className="px-1 pb-2 text-[11px] text-bad">{err}</div>}
+    </>
+  );
+}
 
 function Row({
   title,
@@ -116,16 +213,37 @@ export default function Settings() {
         </Section>
 
         <Section title="AI Engine">
-          <Row
-            title="Use a real LLM"
-            desc="Off = built-in simulated agents (no key needed). On = your own API key."
-          >
-            <Switch
-              on={s.useReal}
-              onClick={() => set({ useReal: !s.useReal })}
-            />
+          <Row title="Brain" desc="Where your agents' intelligence comes from">
+            <div className="flex gap-1 rounded-lg bg-white/5 p-0.5">
+              {(
+                [
+                  ["simulated", "Simulated"],
+                  ["local", "Local"],
+                  ["api", "API key"],
+                ] as const
+              ).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => set({ brain: k, useReal: k === "api" })}
+                  className={`rounded-md px-2.5 py-1 text-[12px] ${
+                    s.brain === k ? "bg-accent text-white" : "text-text2 hover:text-text0"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </Row>
-          {s.useReal && (
+          {s.brain === "simulated" && (
+            <Row
+              title="Offline engine"
+              desc="Deterministic agents that still use real tools (web search, code execution). No key, no cost."
+            >
+              <span className="text-[11px] text-good">Active</span>
+            </Row>
+          )}
+          {s.brain === "local" && <LocalBrainPanel />}
+          {s.brain === "api" && (
             <>
               <Row title="Provider">
                 <div className="flex gap-1 rounded-lg bg-white/5 p-0.5">

@@ -46,8 +46,8 @@ export interface Mission {
   createdAt: number;
   subtasks: Subtask[];
   result: string;
-  /** real | sim — how this mission was executed */
-  engine: "sim" | "real";
+  /** how this mission was executed */
+  engine: "sim" | "real" | "local";
 }
 
 export interface AgentMessage {
