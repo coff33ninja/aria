@@ -12,33 +12,49 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE = "https://sumanthkm.com/aria";
+const OG = `${SITE}/og.png`;
+const DESC =
+  "Aria is an open-source, macOS-style web desktop with a live multi-agent brain — real tools, live code execution, and a local LLM that runs in your browser via WebGPU. No server, no API key required.";
+
 export const metadata: Metadata = {
-  title: "Aria — the AI operating system in your browser",
-  description:
-    "Aria is an open-source, macOS-style web desktop with a built-in multi-agent brain. Talk to it, watch agents collaborate live, and run everything from one beautiful OS.",
+  metadataBase: new URL("https://sumanthkm.com"),
+  title: {
+    default: "Aria — the AI operating system in your browser",
+    template: "%s · Aria",
+  },
+  description: DESC,
   applicationName: "Aria",
-  authors: [{ name: "Sumanth" }],
+  authors: [{ name: "Sumanth Kumar M", url: "https://sumanthkm.com" }],
+  creator: "Sumanth Kumar M",
+  alternates: { canonical: `${SITE}/` },
   keywords: [
     "AI operating system",
-    "multi-agent",
-    "web desktop",
+    "multi-agent system",
     "AI agents",
+    "web desktop",
+    "local LLM",
+    "WebGPU LLM",
+    "in-browser AI",
     "open source",
+    "agent orchestration",
+    "Next.js",
   ],
   openGraph: {
     title: "Aria — the AI operating system in your browser",
-    description:
-      "An open-source web OS with a live multi-agent brain. Talk to it. Watch agents collaborate.",
+    description: DESC,
+    url: `${SITE}/`,
+    siteName: "Aria",
     type: "website",
-    images: ["/screenshots/00-desktop-clean.png"],
+    images: [{ url: OG, width: 1200, height: 630, alt: "Aria — AI operating system" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Aria — the AI operating system in your browser",
-    description:
-      "An open-source web OS with a live multi-agent brain. Talk to it. Watch agents collaborate.",
-    images: ["/screenshots/00-desktop-clean.png"],
+    description: DESC,
+    images: [OG],
   },
+  category: "technology",
 };
 
 export const viewport: Viewport = {
@@ -46,6 +62,34 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+};
+
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Aria",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Web (any modern browser)",
+  description: DESC,
+  url: `${SITE}/`,
+  author: {
+    "@type": "Person",
+    name: "Sumanth Kumar M",
+    url: "https://sumanthkm.com",
+  },
+  license: "https://www.apache.org/licenses/LICENSE-2.0",
+  isAccessibleForFree: true,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  featureList: [
+    "Multi-agent orchestration",
+    "In-browser local LLM (WebGPU)",
+    "Live web search",
+    "Python & JavaScript code execution",
+    "AI image generation",
+    "Voice mode",
+  ],
+  softwareHelp: `${SITE}/about/`,
+  codeRepository: "https://github.com/skmdroid/aria",
 };
 
 export default function RootLayout({
@@ -56,7 +100,13 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="h-full overflow-hidden">{children}</body>
+      <body className="h-full overflow-hidden">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
