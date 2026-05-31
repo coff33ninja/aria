@@ -40,6 +40,7 @@ UI lights up with a live LLM.
 |---|---|
 | 🧠 **Live multi-agent missions** | A real orchestrator decomposes goals and routes work to 7 specialists, streaming their output, agent-to-agent chatter, and a flowing pipeline. |
 | 🌐 **Real tools, real effects** | Agents use a real tool framework — `web_search` fetches **live data with sources** (keyless, via DuckDuckGo + Wikipedia), and produce **real downloadable artifacts**. Not scripted text. |
+| ▶️ **Live code execution** | A built-in Code Runner executes real **Python** (CPython on WASM) and **JavaScript** (sandboxed Worker) in your browser. Forge even *runs the code it writes* during a mission. |
 | 🖥️ **A genuine desktop** | Animated boot → wallpaper → menu bar → magnifying dock → draggable, resizable windows with traffic lights, minimize & maximize. |
 | 🔍 **Spotlight (⌘K)** | Fuzzy-search apps, run system commands, or *ask Aria anything* — dispatching a full mission from one keystroke. |
 | 🗣️ **Voice Mode** | A hands-free JARVIS-style orb that listens continuously, transcribes you live, speaks back, and auto re-listens for natural back-and-forth. |
@@ -80,6 +81,13 @@ Watch the plan stream in: Atlas briefs the team, specialists work in parallel, E
 ### Real research — live web data with sources
 Sage calls the `web_search` tool mid-mission and grounds its findings in real, cited sources.
 ![Live research](public/screenshots/11-live-research.png)
+
+### Code Runner — real Python & JavaScript, in the browser
+CPython on WASM and a sandboxed JS worker. Agents use the same engine to run what they write.
+<p>
+<img src="public/screenshots/13-code-python.png" width="49%" alt="Python execution" />
+<img src="public/screenshots/12-code-js.png" width="49%" alt="JavaScript execution" />
+</p>
 
 ### Dashboard — your agent runtime, live
 ![Dashboard](public/screenshots/04-dashboard.png)

@@ -5,6 +5,7 @@ import { useAria } from "@/store/useAria";
 import { useOS } from "@/store/useOS";
 import { AGENT_LIST } from "@/lib/agents";
 import { APPS, type AppId } from "@/lib/apps";
+import { runJs, runPython } from "@/lib/runtime/exec";
 
 interface Line {
   id: number;
@@ -58,6 +59,8 @@ export default function Terminal() {
             "  agents            list the agent roster",
             "  run <goal>        dispatch the team on a mission",
             "  ask <message>     chat with Aria",
+            "  js <code>         run JavaScript for real",
+            "  py <code>         run Python (CPython on WASM)",
             "  missions          list this session's missions",
             "  files | ls        list generated artifacts",
             "  cat <name>        print an artifact",
@@ -87,6 +90,28 @@ export default function Terminal() {
         os.openApp("assistant");
         sendChat(arg);
         print("Sent to Aria — see the Assistant window.", "sys");
+        break;
+      case "js":
+      case "node":
+        if (!arg) return print("usage: js <code>   (e.g. js console.log(2**10))", "sys");
+        print("running…", "sys");
+        runJs(arg).then((r) =>
+          print(
+            r.ok ? r.output || "(no output)" : "Error: " + r.error,
+            r.ok ? "out" : "sys",
+          ),
+        );
+        break;
+      case "py":
+      case "python":
+        if (!arg) return print("usage: py <code>   (e.g. py print(sum(range(100))))", "sys");
+        print("booting Python… (first run downloads the WASM runtime)", "sys");
+        runPython(arg).then((r) =>
+          print(
+            r.ok ? r.output || "(no output)" : "Error: " + r.error,
+            r.ok ? "out" : "sys",
+          ),
+        );
         break;
       case "missions":
         if (!aria.missions.length) return print("no missions yet", "sys");

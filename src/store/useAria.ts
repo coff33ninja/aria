@@ -22,6 +22,7 @@ import {
 } from "@/lib/simEngine";
 import { callReal } from "@/lib/realEngine";
 import { searchWeb, formatResearch } from "@/lib/runtime/tools";
+import { runJs } from "@/lib/runtime/exec";
 import { useOS } from "./useOS";
 import { speak } from "@/lib/voice";
 
@@ -384,6 +385,22 @@ export const useAria = create<AriaState>()(
             }
           } else {
             full = simulateOutput(task.agentId, prompt, task.title);
+          }
+
+          // Real tool use: Forge actually RUNS the JS it writes.
+          if (task.agentId === "forge") {
+            const m = full.match(/```(?:js|javascript)\n([\s\S]*?)```/);
+            if (m) {
+              post({ from: "forge", text: "▶ run_js(prototype)" });
+              const res = await runJs(m[1]);
+              full += res.ok
+                ? `\n\n**▶ Live output** (${res.durationMs}ms):\n\`\`\`\n${res.output || "(no output)"}\n\`\`\``
+                : `\n\n**▶ Execution failed:** ${res.error}`;
+              post({
+                from: "forge",
+                text: res.ok ? `✓ ran in ${res.durationMs}ms` : "execution failed",
+              });
+            }
           }
 
           await typeStream(

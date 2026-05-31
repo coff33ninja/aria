@@ -175,26 +175,21 @@ export function simulateOutput(
 
     case "forge":
       return [
-        `Engineering pass on **${kw}**.`,
+        `Engineering pass on **${kw}**. I wrote a working prototype and ran it:`,
         ``,
-        `Architecture: ${pick([
-          "a thin client over a stateless API — easy to reason about, cheap to scale",
-          "an event-driven core so each piece fails independently",
-          "a single composable module with a clean public surface",
-        ])}.`,
-        ``,
-        "```ts",
-        `// core of the solution`,
-        `export async function run(input: Input): Promise<Result> {`,
-        `  const plan = decompose(input);          // break the job down`,
-        `  const parts = await Promise.all(         // do the work in parallel`,
-        `    plan.map((step) => execute(step)),`,
-        `  );`,
-        `  return synthesize(parts);                // stitch it back together`,
+        "```js",
+        `// self-contained, runnable`,
+        `function rank(items) {`,
+        `  return items`,
+        `    .map((x) => ({ name: x, score: (x.length * 7) % 13 }))`,
+        `    .sort((a, b) => b.score - a.score);`,
         `}`,
+        `const ranked = rank(["alpha", "beta", "gamma", "delta", "epsilon"]);`,
+        `console.log("ranked:", ranked.map((r) => r.name + ":" + r.score).join(", "));`,
+        `return ranked.length + " items ranked";`,
         "```",
         ``,
-        `Built it to be boring and robust over clever. Ready for review.`,
+        `Built it to be boring and robust over clever.`,
       ].join("\n");
 
     case "quill":

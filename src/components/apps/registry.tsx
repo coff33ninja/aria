@@ -4,6 +4,7 @@ import type { AppId } from "@/lib/apps";
 import Assistant from "./Assistant";
 import Agents from "./Agents";
 import Dashboard from "./Dashboard";
+import Code from "./Code";
 import Terminal from "./Terminal";
 import Files from "./Files";
 import Notes from "./Notes";
@@ -17,6 +18,8 @@ export function AppView({ appId }: { appId: AppId; winId: string }) {
       return <Agents />;
     case "dashboard":
       return <Dashboard />;
+    case "code":
+      return <Code />;
     case "terminal":
       return <Terminal />;
     case "files":

@@ -4,6 +4,7 @@ export type AppId =
   | "assistant"
   | "agents"
   | "dashboard"
+  | "code"
   | "terminal"
   | "files"
   | "notes"
@@ -56,6 +57,17 @@ export const APPS: AppMeta[] = [
     h: 620,
     minW: 600,
     minH: 440,
+    dock: true,
+  },
+  {
+    id: "code",
+    name: "Code Runner",
+    icon: "Code2",
+    color: "#a78bfa",
+    w: 860,
+    h: 620,
+    minW: 560,
+    minH: 420,
     dock: true,
   },
   {
