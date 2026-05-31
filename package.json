@@ -1,0 +1,44 @@
+{
+  "name": "aria",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Aria — the AI operating system in your browser. A macOS-style web desktop with a live multi-agent brain.",
+  "license": "MIT",
+  "keywords": [
+    "ai",
+    "agents",
+    "multi-agent",
+    "web-os",
+    "desktop",
+    "nextjs",
+    "operating-system"
+  ],
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^1.17.0",
+    "nanoid": "^5.1.11",
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.6.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "puppeteer-core": "^25.1.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
