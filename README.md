@@ -41,6 +41,7 @@ UI lights up with a live LLM.
 | 🧠 **Live multi-agent missions** | A real orchestrator decomposes goals and routes work to 7 specialists, streaming their output, agent-to-agent chatter, and a flowing pipeline. |
 | 🌐 **Real tools, real effects** | Agents use a real tool framework — `web_search` fetches **live data with sources** (keyless, via DuckDuckGo + Wikipedia), and produce **real downloadable artifacts**. Not scripted text. |
 | ▶️ **Live code execution** | A built-in Code Runner executes real **Python** (CPython on WASM) and **JavaScript** (sandboxed Worker) in your browser. Forge even *runs the code it writes* during a mission. |
+| 🕸️ **Live agent graph** | Watch the whole team in a real-time graph — nodes light up by status, edges flow on handoff, and tool calls (`web_search`, `run_js`) surface right on the agents. Plus one-click mission replay. |
 | 🖥️ **A genuine desktop** | Animated boot → wallpaper → menu bar → magnifying dock → draggable, resizable windows with traffic lights, minimize & maximize. |
 | 🔍 **Spotlight (⌘K)** | Fuzzy-search apps, run system commands, or *ask Aria anything* — dispatching a full mission from one keystroke. |
 | 🗣️ **Voice Mode** | A hands-free JARVIS-style orb that listens continuously, transcribes you live, speaks back, and auto re-listens for natural back-and-forth. |
@@ -77,6 +78,11 @@ Aria is the face and voice of the OS. Under the hood she delegates to seven spec
 ### Agents — live mission control
 Watch the plan stream in: Atlas briefs the team, specialists work in parallel, Echo reviews.
 ![Agents running](public/screenshots/03-agents-running.png)
+
+### Mission control — the live agent graph
+Atlas routes the plan, specialists work in parallel, Echo reviews — nodes light up by status,
+edges flow on handoff, and each agent shows the tool it's using.
+![Agent graph](public/screenshots/15-graph-running.png)
 
 ### Real research — live web data with sources
 Sage calls the `web_search` tool mid-mission and grounds its findings in real, cited sources.

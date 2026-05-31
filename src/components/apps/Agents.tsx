@@ -8,6 +8,7 @@ import type { Mission, Subtask } from "@/lib/types";
 import AgentAvatar from "@/components/ui/AgentAvatar";
 import Markdown from "@/components/ui/Markdown";
 import Icon from "@/components/ui/Icon";
+import AgentGraph from "./AgentGraph";
 
 const EXAMPLES = [
   "Research and compare the top 3 CRMs for a startup",
@@ -114,6 +115,7 @@ export default function Agents() {
   const runMission = useAria((s) => s.runMission);
 
   const [prompt, setPrompt] = useState("");
+  const [view, setView] = useState<"pipeline" | "graph">("pipeline");
   const busFeedRef = useRef<HTMLDivElement>(null);
   const running = activeMissionId != null;
   const mission = missions[0];
@@ -180,21 +182,46 @@ export default function Agents() {
         <div className="min-h-0 flex-1 overflow-y-auto p-4 scroll-thin">
           {mission ? (
             <>
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <div className="text-[14px] font-semibold text-text0">{mission.title}</div>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate text-[14px] font-semibold text-text0">{mission.title}</div>
                   <div className="text-[11px] text-text3">
                     {mission.engine === "real" ? "Live LLM" : "Simulated"} ·{" "}
                     {mission.subtasks.length} steps
+                    {missions.length > 1 && ` · ${missions.length} this session`}
                   </div>
                 </div>
-                {missions.length > 1 && (
-                  <span className="text-[11px] text-text3">
-                    {missions.length} missions this session
-                  </span>
-                )}
+                <div className="flex shrink-0 items-center gap-2">
+                  {mission.status === "done" && !running && (
+                    <button
+                      onClick={() => launch(mission.prompt)}
+                      className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[11px] text-text1 hover:bg-white/5"
+                      title="Replay this mission"
+                    >
+                      <Icon name="RotateCcw" size={12} /> Replay
+                    </button>
+                  )}
+                  <div className="flex gap-0.5 rounded-lg bg-white/5 p-0.5">
+                    {(["pipeline", "graph"] as const).map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setView(v)}
+                        className={`flex items-center gap-1 rounded-md px-2 py-1 text-[11px] capitalize ${
+                          view === v ? "bg-accent text-white" : "text-text2 hover:text-text0"
+                        }`}
+                      >
+                        <Icon name={v === "graph" ? "Workflow" : "ListTree"} size={12} />
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <MissionView mission={mission} />
+              {view === "graph" ? (
+                <AgentGraph mission={mission} />
+              ) : (
+                <MissionView mission={mission} />
+              )}
             </>
           ) : (
             <div className="grid h-full place-items-center">

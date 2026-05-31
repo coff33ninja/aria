@@ -187,6 +187,11 @@ body {
     opacity: 0;
   }
 }
+@keyframes dashFlow {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
 
 .animate-float {
   animation: ariaFloat 5s ease-in-out infinite;
