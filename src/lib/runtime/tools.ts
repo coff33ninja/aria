@@ -59,6 +59,31 @@ export const webSearchTool: Tool<{ query: string }> = {
   },
 };
 
+/* ───────────────────────── Image generation ───────────────────────── */
+
+/**
+ * Generate a real image from a text prompt. Keyless by default (Pollinations),
+ * so it works on a fresh clone with no setup. Returns a stable image URL.
+ */
+export function generateImageUrl(prompt: string, seed = 1): string {
+  const clean = prompt.replace(/\s+/g, " ").trim().slice(0, 240);
+  // routed through our same-origin proxy to avoid cross-origin image blocking
+  return `/api/image?prompt=${encodeURIComponent(clean)}&seed=${seed}`;
+}
+
+export const imageGenTool: Tool<{ prompt: string }> = {
+  name: "image_gen",
+  description: "Generate a real image from a text description.",
+  parameters: {
+    prompt: { type: "string", description: "What the image should depict" },
+  },
+  async run({ prompt }): Promise<ToolResult> {
+    const url = generateImageUrl(prompt, 1 + Math.floor(Math.random() * 9999));
+    return { ok: true, summary: "Generated an image", data: { url } };
+  },
+};
+
 export const TOOLS: Record<string, Tool> = {
   web_search: webSearchTool as Tool,
+  image_gen: imageGenTool as Tool,
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import AsyncImage from "./AsyncImage";
 
 /** Tiny markdown renderer: headings, bold, inline + fenced code, quotes, bullets. */
 function inline(text: string, keyBase: string): React.ReactNode[] {
@@ -78,6 +79,15 @@ export default function Markdown({ text }: { text: string }) {
       }
       flush(key);
       if (!line.trim()) return;
+      const img = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
+      if (img) {
+        blocks.push(
+          <div key={key} className="my-2">
+            <AsyncImage src={img[2]} alt={img[1]} />
+          </div>,
+        );
+        return;
+      }
       if (/^#{1,3}\s/.test(line)) {
         const level = line.match(/^#+/)![0].length;
         const content = line.replace(/^#+\s/, "");

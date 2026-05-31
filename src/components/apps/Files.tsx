@@ -6,12 +6,14 @@ import { AGENTS } from "@/lib/agents";
 import type { FileDoc } from "@/lib/types";
 import Icon from "@/components/ui/Icon";
 import Markdown from "@/components/ui/Markdown";
+import AsyncImage from "@/components/ui/AsyncImage";
 
 const KIND_ICON: Record<FileDoc["kind"], string> = {
   md: "FileText",
   code: "FileCode2",
   data: "FileBarChart2",
   note: "StickyNote",
+  image: "Image",
 };
 
 export default function Files() {
@@ -78,6 +80,10 @@ export default function Files() {
               </button>
               <button
                 onClick={() => {
+                  if (sel.kind === "image") {
+                    window.open(sel.content, "_blank");
+                    return;
+                  }
                   const blob = new Blob([sel.content], { type: "text/plain" });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
@@ -103,7 +109,9 @@ export default function Files() {
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-4 scroll-thin">
-              {sel.kind === "code" ? (
+              {sel.kind === "image" ? (
+                <AsyncImage src={sel.content} alt={sel.name} className="max-w-md" />
+              ) : sel.kind === "code" ? (
                 <pre className="overflow-x-auto rounded-lg border border-line bg-black/40 p-3 font-mono text-[12px] leading-relaxed text-text1 scroll-thin">
                   <code>{sel.content}</code>
                 </pre>

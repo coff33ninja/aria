@@ -73,7 +73,8 @@ export interface ChatMessage {
 export interface FileDoc {
   id: string;
   name: string;
-  kind: "md" | "code" | "data" | "note";
+  kind: "md" | "code" | "data" | "note" | "image";
+  /** for image kind, this is the image URL */
   content: string;
   createdBy: AgentId | "you";
   missionId?: string;

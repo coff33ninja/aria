@@ -21,8 +21,8 @@ const INTENTS: Intent[] = [
   },
   {
     agent: "iris",
-    match: /\b(design|ui|ux|logo|brand|color|colour|layout|interface|landing|figma|aesthetic|theme)\b/i,
-    title: () => "Shape the visual design and interface",
+    match: /\b(design|ui|ux|logo|brand|color|colour|layout|interface|landing|figma|aesthetic|theme|image|art|picture|illustration|poster|icon|mockup|visual)\b/i,
+    title: () => "Shape the visual design and generate a concept image",
   },
   {
     agent: "ledger",

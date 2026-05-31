@@ -43,6 +43,7 @@ UI lights up with a live LLM.
 | 🌐 **Real tools, real effects** | Agents use a real tool framework — `web_search` fetches **live data with sources** (keyless, via DuckDuckGo + Wikipedia), and produce **real downloadable artifacts**. Not scripted text. |
 | ▶️ **Live code execution** | A built-in Code Runner executes real **Python** (CPython on WASM) and **JavaScript** (sandboxed Worker) in your browser. Forge even *runs the code it writes* during a mission. |
 | 🕸️ **Live agent graph** | Watch the whole team in a real-time graph — nodes light up by status, edges flow on handoff, and tool calls (`web_search`, `run_js`) surface right on the agents. Plus one-click mission replay. |
+| 🖼️ **Real image generation** | Iris generates actual concept images from a prompt — **keyless** (works on a fresh clone), proxied same-origin, saved to Files. |
 | 🖥️ **A genuine desktop** | Animated boot → wallpaper → menu bar → magnifying dock → draggable, resizable windows with traffic lights, minimize & maximize. |
 | 🔍 **Spotlight (⌘K)** | Fuzzy-search apps, run system commands, or *ask Aria anything* — dispatching a full mission from one keystroke. |
 | 🗣️ **Voice Mode** | A hands-free JARVIS-style orb that listens continuously, transcribes you live, speaks back, and auto re-listens for natural back-and-forth. |
@@ -88,6 +89,10 @@ edges flow on handoff, and each agent shows the tool it's using.
 ### Real research — live web data with sources
 Sage calls the `web_search` tool mid-mission and grounds its findings in real, cited sources.
 ![Live research](public/screenshots/11-live-research.png)
+
+### Real image generation — Iris designs concept art
+Keyless and proxied same-origin; the generated image is saved to Files.
+![Generated image](public/screenshots/19-image-files.png)
 
 ### Code Runner — real Python & JavaScript, in the browser
 CPython on WASM and a sandboxed JS worker. Agents use the same engine to run what they write.

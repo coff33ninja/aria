@@ -21,7 +21,7 @@ import {
   synthesize,
 } from "@/lib/simEngine";
 import { callReal } from "@/lib/realEngine";
-import { searchWeb, formatResearch } from "@/lib/runtime/tools";
+import { searchWeb, formatResearch, generateImageUrl } from "@/lib/runtime/tools";
 import { runJs } from "@/lib/runtime/exec";
 import { localComplete, localReady } from "@/lib/runtime/localBrain";
 import { useOS, type Settings } from "./useOS";
@@ -413,6 +413,32 @@ export const useAria = create<AriaState>()(
                 text: res.ok ? `✓ ran in ${res.durationMs}ms` : "execution failed",
               });
             }
+          }
+
+          // Real tool use: Iris generates an actual concept image.
+          if (task.agentId === "iris") {
+            post({ from: "iris", text: "🎨 image_gen(concept)" });
+            const imgPrompt = `${prompt.slice(0, 70)}, minimal concept art, dark`;
+            const url = generateImageUrl(
+              imgPrompt,
+              1 + Math.floor(Math.random() * 9999),
+            );
+            full += `\n\n![concept](${url})`;
+            set((s) => ({
+              files: [
+                {
+                  id: nanoid(8),
+                  name: "concept.jpg",
+                  kind: "image",
+                  content: url,
+                  createdBy: "iris",
+                  missionId: mid,
+                  ts: Date.now(),
+                },
+                ...s.files,
+              ],
+            }));
+            post({ from: "iris", text: "✓ generated concept image" });
           }
 
           await typeStream(
