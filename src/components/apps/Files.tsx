@@ -78,6 +78,21 @@ export default function Files() {
               </button>
               <button
                 onClick={() => {
+                  const blob = new Blob([sel.content], { type: "text/plain" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = sel.name;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="rounded-lg p-1.5 text-text3 hover:bg-white/10 hover:text-text0"
+                title="Download"
+              >
+                <Icon name="Download" size={14} />
+              </button>
+              <button
+                onClick={() => {
                   removeFile(sel.id);
                   setSelId(null);
                 }}

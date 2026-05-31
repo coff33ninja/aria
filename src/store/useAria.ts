@@ -21,6 +21,7 @@ import {
   synthesize,
 } from "@/lib/simEngine";
 import { callReal } from "@/lib/realEngine";
+import { searchWeb, formatResearch } from "@/lib/runtime/tools";
 import { useOS } from "./useOS";
 import { speak } from "@/lib/voice";
 
@@ -333,15 +334,48 @@ export const useAria = create<AriaState>()(
           post({ from: task.agentId, text: `Picking up: ${task.title}.` });
           await sleep(250 + Math.random() * 400);
 
+          const cfg = {
+            provider: os.settings.apiProvider,
+            apiKey: os.settings.apiKey,
+            model: os.settings.apiModel || undefined,
+          };
+
+          // Real tool use: Sage searches the live web before reasoning.
+          let research = "";
+          if (task.agentId === "sage") {
+            post({ from: "sage", text: `🔎 web_search("${prompt.slice(0, 48)}")` });
+            const { results, source } = await searchWeb(prompt);
+            if (results.length) {
+              research = formatResearch(prompt, results);
+              post({
+                from: "sage",
+                text: `✓ ${results.length} live source${results.length > 1 ? "s" : ""} (${source})`,
+              });
+            } else {
+              post({ from: "sage", text: "web_search came back empty — reasoning instead" });
+            }
+          }
+
           let full: string;
-          if (real) {
+          if (task.agentId === "sage" && research) {
+            // Ground Sage's output in the real fetched data.
+            if (real) {
+              try {
+                full = await callReal(
+                  cfg,
+                  ag.system,
+                  `Mission: ${prompt}\n\nYou ran a web_search and got these LIVE results:\n\n${research}\n\nDeliver your subtask "${task.title}": synthesize the key findings in tight bullets and cite the sources.`,
+                );
+              } catch {
+                full = research;
+              }
+            } else {
+              full = research;
+            }
+          } else if (real) {
             try {
               full = await callReal(
-                {
-                  provider: os.settings.apiProvider,
-                  apiKey: os.settings.apiKey,
-                  model: os.settings.apiModel || undefined,
-                },
+                cfg,
                 ag.system,
                 `Mission: ${prompt}\n\nYour subtask: ${task.title}\nRespond as ${ag.name} (${ag.role}).`,
               );

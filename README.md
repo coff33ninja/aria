@@ -39,6 +39,7 @@ UI lights up with a live LLM.
 | | |
 |---|---|
 | 🧠 **Live multi-agent missions** | A real orchestrator decomposes goals and routes work to 7 specialists, streaming their output, agent-to-agent chatter, and a flowing pipeline. |
+| 🌐 **Real tools, real effects** | Agents use a real tool framework — `web_search` fetches **live data with sources** (keyless, via DuckDuckGo + Wikipedia), and produce **real downloadable artifacts**. Not scripted text. |
 | 🖥️ **A genuine desktop** | Animated boot → wallpaper → menu bar → magnifying dock → draggable, resizable windows with traffic lights, minimize & maximize. |
 | 🔍 **Spotlight (⌘K)** | Fuzzy-search apps, run system commands, or *ask Aria anything* — dispatching a full mission from one keystroke. |
 | 🗣️ **Voice Mode** | A hands-free JARVIS-style orb that listens continuously, transcribes you live, speaks back, and auto re-listens for natural back-and-forth. |
@@ -75,6 +76,10 @@ Aria is the face and voice of the OS. Under the hood she delegates to seven spec
 ### Agents — live mission control
 Watch the plan stream in: Atlas briefs the team, specialists work in parallel, Echo reviews.
 ![Agents running](public/screenshots/03-agents-running.png)
+
+### Real research — live web data with sources
+Sage calls the `web_search` tool mid-mission and grounds its findings in real, cited sources.
+![Live research](public/screenshots/11-live-research.png)
 
 ### Dashboard — your agent runtime, live
 ![Dashboard](public/screenshots/04-dashboard.png)
@@ -162,6 +167,9 @@ src/
     │                         # Files, Notes, Settings + registry
     └── ui/                   # Icon, AgentAvatar, Charts, Markdown
 ```
+
+See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the full design — the brain-agnostic engine,
+the tool framework, and the event-sourced UI.
 
 **The mission runner** (`store/useAria.ts`) is the heart of it: it plans a mission into a dependency-aware
 subtask graph, runs Atlas first, fans the specialists out in parallel, streams each agent's output
