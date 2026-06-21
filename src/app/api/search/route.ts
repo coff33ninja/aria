@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { guard } from "@/lib/api-guard";
 import { searchSchema } from "@/lib/api-schemas";
+import { stripHtml } from "@/lib/strip-html";
 
 export const runtime = "edge";
 
@@ -77,7 +78,7 @@ async function wikipedia(query: string): Promise<Result[]> {
   return (d?.query?.search || []).map(
     (x: { title: string; snippet: string }): Result => ({
       title: x.title,
-      snippet: x.snippet.replace(/<[^>]+>/g, ""),
+      snippet: stripHtml(x.snippet),
       url: `https://en.wikipedia.org/wiki/${encodeURIComponent(x.title.replace(/ /g, "_"))}`,
     }),
   );

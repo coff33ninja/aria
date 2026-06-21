@@ -52,9 +52,9 @@
 - [ ] **Deduplicate streaming SSE logic** — Shared utility for `streamOpenAI`/`streamAnthropic`
 - [ ] **Dock `measure()` throttle** — `getBoundingClientRect()` on every mousemove is expensive
 - [ ] **Wire `reduceMotion` setting to `MotionConfig`** — Respect user preference globally
-- [ ] **Fix Markdown image URL regex** — Doesn't match URLs containing parentheses
-- [ ] **Fix `auto-scroll` in Assistant** — Don't force-scroll if user has scrolled up
-- [ ] **Naive HTML stripping in Wikipedia results** — Strengthen `api/search/route.ts` sanitization
+- [x] **Fix Markdown image URL regex** — Doesn't match URLs containing parentheses
+- [x] **Fix `auto-scroll` in Assistant** — Don't force-scroll if user has scrolled up
+- [x] **Naive HTML stripping in Wikipedia results** — Strengthen `api/search/route.ts` sanitization
 - [ ] **About page screenshot carousel** — 24 screenshots exist but page only shows hero
 
 ## 🟢 Nice-to-have / Polish
