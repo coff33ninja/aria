@@ -647,8 +647,8 @@ export default function Settings() {
               </button>
             </div>
           </Row>
-          <Row title="Desktop Widgets" desc="Toggle widgets on the desktop">
-            <div className="flex flex-wrap gap-2">
+          <Row title="Desktop Widgets" desc="Toggle widgets on the desktop. Drag widgets on the desktop to reposition them.">
+            <div className="grid grid-cols-2 gap-2">
               {ALL_WIDGETS.map((w) => {
                 const on = s.widgets.includes(w.id);
                 return (
@@ -661,17 +661,46 @@ export default function Settings() {
                           : [...s.widgets, w.id],
                       })
                     }
-                    className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium ${
+                    className={`flex items-center gap-2 rounded-xl border p-2.5 text-left transition-colors ${
                       on
-                        ? "border-accent/40 bg-accent/10 text-accent"
-                        : "border-line text-text2 hover:text-text1"
+                        ? "border-accent/40 bg-accent/[0.07]"
+                        : "border-line bg-white/[0.02] hover:bg-white/[0.05]"
                     }`}
                   >
-                    {w.name}
+                    <div
+                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
+                        on ? "accent-grad" : "bg-white/5"
+                      }`}
+                    >
+                      <div className={`text-[16px] ${on ? "text-white" : "text-text3"}`}>◆</div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className={`text-[12px] font-medium ${on ? "text-text0" : "text-text2"}`}>{w.name}</div>
+                      <div className="truncate text-[10px] text-text3">{w.desc}</div>
+                    </div>
+                    <div
+                      className={`h-4 w-7 shrink-0 rounded-full transition-colors ${
+                        on ? "bg-accent" : "bg-white/10"
+                      }`}
+                    >
+                      <div
+                        className={`h-4 w-4 rounded-full bg-white transition-transform ${
+                          on ? "translate-x-3" : "translate-x-0.5"
+                        }`}
+                      />
+                    </div>
                   </button>
                 );
               })}
             </div>
+            {Object.keys(s.widgetPositions).length > 0 && (
+              <button
+                onClick={() => set({ widgetPositions: {} })}
+                className="mt-2 text-[11px] text-text3 hover:text-text1"
+              >
+                Reset widget positions
+              </button>
+            )}
           </Row>
         </Section>
 

@@ -36,6 +36,11 @@ export type SnapZone =
 
 export type BrainKind = "simulated" | "api" | "local" | "backend";
 
+export interface WidgetPos {
+  x: number;
+  y: number;
+}
+
 export interface Settings {
   accent: string;
   theme: "dark" | "light";
@@ -60,6 +65,8 @@ export interface Settings {
   customTools: CustomToolDef[];
   /** active desktop widgets */
   widgets: WidgetId[];
+  /** per-widget custom positions (null = auto-layout right column) */
+  widgetPositions: Partial<Record<WidgetId, WidgetPos>>;
 }
 
 export interface CustomToolDef {
@@ -126,6 +133,7 @@ const DEFAULT_SETTINGS: Settings = {
   customAgents: {},
   customTools: [],
   widgets: ALL_WIDGETS.map((w) => w.id),
+  widgetPositions: {},
 };
 
 const MENU_BAR_H = 30;

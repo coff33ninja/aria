@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useOS, type Settings } from "@/store/useOS";
 import { useAria } from "@/store/useAria";
@@ -354,6 +354,10 @@ const WIDGET_MAP: Record<WidgetId, (props: { openApp: (id: AppId) => void }) => 
 export default function DesktopWidgets() {
   const openApp = useOS((s) => s.openApp);
   const activeIds = useOS((s) => s.settings.widgets);
+  const offsets = useOS((s) => s.settings.widgetPositions);
+  const setSettings = useOS((s) => s.setSettings);
+  const dragRef = useRef<{ ox: number; oy: number; ox0: number; oy0: number } | null>(null);
+  const [liveDelta, setLiveDelta] = useState<{ x: number; y: number } | null>(null);
 
   const widgets = ALL_WIDGETS.filter((w) => activeIds.includes(w.id));
 
@@ -362,7 +366,52 @@ export default function DesktopWidgets() {
       {widgets.map((w) => {
         const render = WIDGET_MAP[w.id];
         if (!render) return null;
-        return <div key={w.id}>{render({ openApp })}</div>;
+        const offset = offsets[w.id];
+        const delta = liveDelta ?? { x: 0, y: 0 };
+        const tx = (offset?.x ?? 0) + delta.x;
+        const ty = (offset?.y ?? 0) + delta.y;
+
+        return (
+          <div
+            key={w.id}
+            className="pointer-events-auto"
+            style={{
+              transform: tx || ty ? `translate(${tx}px,${ty}px)` : undefined,
+              zIndex: liveDelta ? 50 : undefined,
+            }}
+            onPointerDown={(e) => {
+              if ((e.target as HTMLElement).closest("input, textarea, button, a")) return;
+              const el = e.currentTarget as HTMLElement;
+              dragRef.current = { ox: e.clientX, oy: e.clientY, ox0: offset?.x ?? 0, oy0: offset?.y ?? 0 };
+              el.setPointerCapture(e.pointerId);
+
+              const onMove = (ev: PointerEvent) => {
+                const d = dragRef.current;
+                if (!d) return;
+                setLiveDelta({ x: ev.clientX - d.ox, y: ev.clientY - d.oy });
+              };
+
+              const onUp = (ev: PointerEvent) => {
+                const d = dragRef.current;
+                if (!d) return;
+                const nx = d.ox0 + ev.clientX - d.ox;
+                const ny = d.oy0 + ev.clientY - d.oy;
+                if (Math.abs(nx) > 5 || Math.abs(ny) > 5) {
+                  setSettings({ widgetPositions: { ...useOS.getState().settings.widgetPositions, [w.id]: { x: nx, y: ny } } });
+                }
+                setLiveDelta(null);
+                dragRef.current = null;
+                el.removeEventListener("pointermove", onMove);
+                el.removeEventListener("pointerup", onUp);
+              };
+
+              el.addEventListener("pointermove", onMove);
+              el.addEventListener("pointerup", onUp);
+            }}
+          >
+            <div style={{ pointerEvents: "auto" }}>{render({ openApp })}</div>
+          </div>
+        );
       })}
     </div>
   );
