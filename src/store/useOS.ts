@@ -28,6 +28,11 @@ export interface Notif {
   ts: number;
 }
 
+export type SnapZone =
+  | "left" | "right" | "top" | "bottom"
+  | "top-left" | "top-right" | "bottom-left" | "bottom-right"
+  | "full";
+
 export type BrainKind = "simulated" | "api" | "local" | "backend";
 
 export interface Settings {
@@ -71,6 +76,7 @@ interface OSState {
   toggleMaximize: (id: string, viewport: { w: number; h: number }) => void;
   moveWin: (id: string, x: number, y: number) => void;
   resizeWin: (id: string, w: number, h: number, x?: number, y?: number) => void;
+  snapWin: (id: string, zone: SnapZone, viewport: { w: number; h: number }) => void;
   isOpen: (appId: AppId) => boolean;
 
   setSpotlight: (b: boolean) => void;
@@ -215,6 +221,29 @@ export const useOS = create<OSState>()(
                 }
               : win,
           ),
+        })),
+
+      snapWin: (id, zone, viewport) =>
+        set((s) => ({
+          wins: s.wins.map((w) => {
+            if (w.id !== id) return w;
+            const prev = w.maximized ? w.prev : { x: w.x, y: w.y, w: w.w, h: w.h };
+            const hw = Math.round(viewport.w / 2);
+            const hh = Math.round(viewport.h / 2);
+            const positions: Record<SnapZone, { x: number; y: number; w: number; h: number }> = {
+              "left":        { x: 0, y: MENU_BAR_H, w: hw, h: viewport.h - MENU_BAR_H - 84 },
+              "right":       { x: hw, y: MENU_BAR_H, w: hw, h: viewport.h - MENU_BAR_H - 84 },
+              "top":         { x: 0, y: MENU_BAR_H, w: viewport.w, h: hh },
+              "bottom":      { x: 0, y: hh, w: viewport.w, h: hh },
+              "top-left":    { x: 0, y: MENU_BAR_H, w: hw, h: hh },
+              "top-right":   { x: hw, y: MENU_BAR_H, w: hw, h: hh },
+              "bottom-left": { x: 0, y: hh, w: hw, h: hh },
+              "bottom-right":{ x: hw, y: hh, w: hw, h: hh },
+              "full":        { x: 0, y: MENU_BAR_H, w: viewport.w, h: viewport.h - MENU_BAR_H - 84 },
+            };
+            const p = positions[zone];
+            return { ...w, ...p, maximized: zone === "full", prev: zone === "full" ? prev : undefined };
+          }),
         })),
 
       isOpen: (appId) =>

@@ -43,6 +43,20 @@ export default function Desktop() {
         if (os.controlCenterOpen) os.setControlCenter(false);
         if (os.notifCenterOpen) os.setNotifCenter(false);
         if (os.ariaMenuOpen) os.setAriaMenu(false);
+      } else if (e.altKey && !e.metaKey && !e.ctrlKey && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
+        e.preventDefault();
+        const os = useOS.getState();
+        const activeWin = [...os.wins].sort((a, b) => b.z - a.z).find((w) => !w.minimized);
+        if (!activeWin) return;
+        const vp = { w: window.innerWidth, h: window.innerHeight };
+        const zoneMap: Record<string, string> = {
+          ArrowLeft: e.shiftKey ? "top-left" : "left",
+          ArrowRight: e.shiftKey ? "bottom-right" : "right",
+          ArrowUp: e.shiftKey ? "top-right" : "top",
+          ArrowDown: e.shiftKey ? "bottom-left" : "bottom",
+        };
+        const zone = zoneMap[e.key];
+        if (zone) os.snapWin(activeWin.id, zone as any, vp);
       }
     };
     window.addEventListener("keydown", h);

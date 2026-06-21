@@ -1,13 +1,33 @@
 "use client";
 
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { useOS, type Win } from "@/store/useOS";
+import { useOS, type Win, type SnapZone } from "@/store/useOS";
 import { APP_MAP } from "@/lib/apps";
 import Icon from "@/components/ui/Icon";
 import { AppView } from "@/components/apps/registry";
 
 const MENU_BAR_H = 30;
+const SNAP_THRESHOLD = 40;
+const DOCK_H = 84;
+
+function detectSnapZone(x: number, y: number, w: number, h: number, vw: number, vh: number): SnapZone | null {
+  const left = x <= SNAP_THRESHOLD;
+  const right = x + w >= vw - SNAP_THRESHOLD;
+  const top = y <= MENU_BAR_H + SNAP_THRESHOLD;
+  const bottom = y + h >= vh - DOCK_H - SNAP_THRESHOLD;
+
+  if (left && top) return "top-left";
+  if (right && top) return "top-right";
+  if (left && bottom) return "bottom-left";
+  if (right && bottom) return "bottom-right";
+  if (left) return "left";
+  if (right) return "right";
+  if (top && bottom) return "full";
+  if (top) return "top";
+  if (bottom) return "bottom";
+  return null;
+}
 
 export default function Window({ win, active = true }: { win: Win; active?: boolean }) {
   const meta = APP_MAP[win.appId];
@@ -17,7 +37,9 @@ export default function Window({ win, active = true }: { win: Win; active?: bool
   const toggleMaximize = useOS((s) => s.toggleMaximize);
   const moveWin = useOS((s) => s.moveWin);
   const resizeWin = useOS((s) => s.resizeWin);
+  const snapWin = useOS((s) => s.snapWin);
 
+  const [snapPreview, setSnapPreview] = useState<SnapZone | null>(null);
   const dragRef = useRef<{ ox: number; oy: number; sx: number; sy: number } | null>(
     null,
   );
@@ -40,8 +62,21 @@ export default function Window({ win, active = true }: { win: Win; active?: bool
       );
       const ny = Math.min(vh - 48, Math.max(MENU_BAR_H, d.sy + ev.clientY - d.oy));
       moveWin(win.id, nx, ny);
+
+      const zone = detectSnapZone(nx, ny, cur.w, cur.h, vw, vh);
+      setSnapPreview(zone);
     };
-    const up = () => {
+    const up = (ev: PointerEvent) => {
+      const zone = detectSnapZone(
+        useOS.getState().wins.find((w) => w.id === win.id)?.x ?? 0,
+        useOS.getState().wins.find((w) => w.id === win.id)?.y ?? 0,
+        cur.w, cur.h,
+        window.innerWidth, window.innerHeight,
+      );
+      if (zone) {
+        snapWin(win.id, zone, { w: window.innerWidth, h: window.innerHeight });
+      }
+      setSnapPreview(null);
       dragRef.current = null;
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
@@ -146,6 +181,20 @@ export default function Window({ win, active = true }: { win: Win; active?: bool
         </div>
         <div className="w-14" />
       </div>
+
+      {/* snap preview overlay */}
+      {snapPreview && (
+        <div
+          className="pointer-events-none absolute z-50 rounded-xl border-2 border-accent/40 bg-accent/10"
+          style={{
+            left: snapPreview.includes("right") ? "50%" : 0,
+            right: snapPreview.includes("left") ? "50%" : 0,
+            top: snapPreview.includes("bottom") ? "50%" : 0,
+            bottom: snapPreview.includes("top") ? "50%" : 0,
+            inset: snapPreview === "full" ? 0 : undefined,
+          }}
+        />
+      )}
 
       {/* content */}
       <div className="relative min-h-0 flex-1 overflow-hidden">
