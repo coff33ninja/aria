@@ -24,7 +24,8 @@ import { callReal, callRealStream } from "@/lib/realEngine";
 import { searchWeb, formatResearch, generateImageUrl } from "@/lib/runtime/tools";
 import { runJs } from "@/lib/runtime/exec";
 import { localComplete, localReady } from "@/lib/runtime/localBrain";
-import { callBackend, callBackendStream } from "@/lib/runtime/backendBrain";
+import { callBackend, callBackendStream, generateEmbedding } from "@/lib/runtime/backendBrain";
+import { memoryStore, type MemoryEntry } from "@/lib/runtime/memoryStore";
 import { useOS, type Settings } from "./useOS";
 import { speak } from "@/lib/voice";
 
@@ -43,7 +44,7 @@ async function think(
   prompt: string,
   history: Turn[] = [],
 ): Promise<string | null> {
-  system = withContext(system);
+  system = withContext(system); // sync context docs (no memory search in mission runner)
   if (settings.brain === "local" && localReady(settings.localModel)) {
     try {
       return await localComplete(system, prompt, history);
@@ -82,14 +83,54 @@ async function think(
   return null;
 }
 
-/** Append context docs to a system prompt. */
+/** Append context docs to a system prompt (sync, used in mission runner). */
 function withContext(system: string): string {
   const docs = useAria.getState().contextDocs;
   if (!docs.length) return system;
-  const ctx = docs
-    .map((d) => `[${d.title}]\n${d.content}`)
-    .join("\n\n");
+  const ctx = docs.map((d) => `[${d.title}]\n${d.content}`).join("\n\n");
   return `${system}\n\nReference context you must use:\n${ctx}`;
+}
+
+/** Cosine similarity between two vectors. */
+function cosine(a: number[], b: number[]): number {
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  return na && nb ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0;
+}
+
+/** Search memory entries for the top-k most relevant to a query embedding. */
+function searchMemories(
+  entries: MemoryEntry[],
+  query: number[],
+  k = 3,
+  threshold = 0.35,
+): MemoryEntry[] {
+  const scored = entries.map((e) => ({ entry: e, score: cosine(query, e.embedding) }));
+  scored.sort((a, b) => b.score - a.score);
+  return scored.filter((s) => s.score >= threshold).slice(0, k).map((s) => s.entry);
+}
+
+/** Append context docs and relevant memories to a system prompt. */
+async function withMemory(system: string, query: string): Promise<string> {
+  let enriched = withContext(system);
+  const entries = useAria.getState().memoryEntries;
+  if (entries.length > 0) {
+    const os = useOS.getState();
+    if (os.settings.brain === "backend" && os.settings.backendUrl) {
+      try {
+        const embedding = await generateEmbedding(os.settings.backendUrl, query.slice(0, 256));
+        const relevant = searchMemories(entries, embedding);
+        if (relevant.length) {
+          enriched += `\n\nRelevant memories from past conversations:\n${relevant.map((m) => `- ${m.text}`).join("\n")}`;
+        }
+      } catch { /* memory search unavailable */ }
+    }
+  }
+  return enriched;
 }
 
 /** Stream `full` out in small chunks, calling onChunk with the text-so-far. */
@@ -132,6 +173,7 @@ interface AriaState {
   busy: boolean;
   memory: { name?: string };
   contextDocs: ContextDoc[];
+  memoryEntries: MemoryEntry[];
 
   sendChat: (text: string, spoken?: boolean) => Promise<void>;
   runMission: (prompt: string) => Promise<string>;
@@ -141,6 +183,7 @@ interface AriaState {
   updateFile: (id: string, patch: { name?: string; content?: string }) => void;
   addContextDoc: (title: string, content: string) => void;
   removeContextDoc: (id: string) => void;
+  embedAndStore: (text: string, source: MemoryEntry["source"]) => Promise<void>;
   reset: () => void;
 }
 
@@ -174,6 +217,7 @@ export const useAria = create<AriaState>()(
       busy: false,
       memory: {},
       contextDocs: [],
+      memoryEntries: [],
 
       clearChat: () =>
         set({
@@ -223,6 +267,25 @@ export const useAria = create<AriaState>()(
           contextDocs: s.contextDocs.filter((d) => d.id !== id),
         })),
 
+      embedAndStore: async (text, source) => {
+        const os = useOS.getState();
+        if (os.settings.brain !== "backend" || !os.settings.backendUrl) return;
+        try {
+          const embedding = await generateEmbedding(os.settings.backendUrl, text.slice(0, 512));
+          const entry: MemoryEntry = {
+            id: nanoid(8),
+            text: text.slice(0, 512),
+            embedding,
+            source,
+            ts: Date.now(),
+          };
+          memoryStore.add(entry);
+          set((s) => ({ memoryEntries: [...s.memoryEntries, entry] }));
+        } catch {
+          // embedding failed silently
+        }
+      },
+
       reset: () =>
         set({
           missions: [],
@@ -232,6 +295,7 @@ export const useAria = create<AriaState>()(
           activeMissionId: null,
           tokens: 0,
           contextDocs: [],
+          memoryEntries: [],
         }),
 
       sendChat: async (text, spoken = false) => {
@@ -335,7 +399,7 @@ export const useAria = create<AriaState>()(
 
         if (os.settings.brain === "backend" || (os.settings.brain === "api" && os.settings.apiKey)) {
           try {
-            const streamSys = withContext(`You are Aria, a warm, concise AI operating system assistant with a team of agents. Reply in 1-3 sentences.${ctx.name ? ` The user's name is ${ctx.name}.` : ""}`);
+            const streamSys = await withMemory(`You are Aria, a warm, concise AI operating system assistant with a team of agents. Reply in 1-3 sentences.${ctx.name ? ` The user's name is ${ctx.name}.` : ""}`, trimmed);
             if (os.settings.brain === "backend") {
               await callBackendStream(
                 { backendUrl: os.settings.backendUrl, model: os.settings.backendModel || undefined },
@@ -359,7 +423,12 @@ export const useAria = create<AriaState>()(
           }
           finishAria();
           set({ busy: false });
-          if (spoken && os.settings.voiceEnabled) speak(get().chat.find((m) => m.id === ariaMsg.id)?.text || "");
+          const finalText = get().chat.find((m) => m.id === ariaMsg.id)?.text || "";
+          if (os.settings.brain === "backend") {
+            get().embedAndStore(trimmed, "chat");
+            get().embedAndStore(finalText, "chat");
+          }
+          if (spoken && os.settings.voiceEnabled) speak(finalText);
           return;
         }
         const sys = `You are Aria, a warm, concise AI operating system assistant with a team of agents. Reply in 1-3 sentences.${
@@ -370,6 +439,8 @@ export const useAria = create<AriaState>()(
         await typeStream(reply, patchAria);
         finishAria();
         set({ busy: false });
+        get().embedAndStore(trimmed, "chat");
+        get().embedAndStore(reply, "chat");
         if (spoken && os.settings.voiceEnabled) speak(reply);
       },
 
@@ -590,6 +661,7 @@ export const useAria = create<AriaState>()(
           color: "#7c6cff",
         });
 
+        get().embedAndStore(`Mission: ${title}\n${result}`, "mission");
         return result;
       },
     }),
@@ -602,6 +674,7 @@ export const useAria = create<AriaState>()(
         missions: s.missions,
         memory: s.memory,
         contextDocs: s.contextDocs,
+        memoryEntries: s.memoryEntries,
       }),
     },
   ),

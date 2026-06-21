@@ -113,6 +113,21 @@ export async function callBackendStream(
   }
 }
 
+export async function generateEmbedding(
+  backendUrl: string,
+  text: string,
+  model?: string,
+): Promise<number[]> {
+  const res = await fetch("/api/backend/embeddings", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ backendUrl, prompt: text, model: model || "llama3.2" }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || "Embedding failed");
+  return data?.embedding || [];
+}
+
 export async function deleteModel(
   backendUrl: string,
   model: string,
