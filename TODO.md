@@ -60,8 +60,8 @@
 ## 🟢 Nice-to-have / Polish
 
 - [ ] **Custom cursor / desktop icons** — No desktop icons, no context menu
-- [ ] **Desktop widget system** — User-configurable widgets on the desktop surface
-- [ ] **Theme system** — Beyond accent color; light mode, custom themes
+- [x] **Desktop widget system** — Configurable via Settings; 4 widgets (clock, aria-status, team, stats)
+- [x] **Theme system** — Light palette in `globals.css`, `data-theme` toggle via `Desktop.tsx`, Dark/Light toggle in Settings
 - [x] **Align API route runtimes** — All routes now use `runtime = "edge"`
 - [x] **Replace inline styles with Tailwind classes** — Window.tsx traffic-light buttons (remaining dynamic positioning/snap preview are legitimate inline uses)
 - [x] **Pin Node.js version** — Add `.nvmrc` + `.node-version` (Node 20 LTS)

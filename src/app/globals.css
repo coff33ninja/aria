@@ -264,9 +264,9 @@ body {
 .shimmer {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.04) 25%,
-    rgba(255, 255, 255, 0.12) 37%,
-    rgba(255, 255, 255, 0.04) 63%
+    color-mix(in srgb, var(--text-0) 4%, transparent) 25%,
+    color-mix(in srgb, var(--text-0) 12%, transparent) 37%,
+    color-mix(in srgb, var(--text-0) 4%, transparent) 63%
   );
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;

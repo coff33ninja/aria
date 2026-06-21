@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { nanoid } from "nanoid";
 import { APP_MAP, type AppId, type WallpaperId } from "@/lib/apps";
+import { ALL_WIDGETS, type WidgetId } from "@/lib/widgets";
 
 export interface Win {
   id: string;
@@ -57,6 +58,8 @@ export interface Settings {
   customAgents: Record<string, { system: string }>;
   /** user-registered custom tools */
   customTools: CustomToolDef[];
+  /** active desktop widgets */
+  widgets: WidgetId[];
 }
 
 export interface CustomToolDef {
@@ -122,6 +125,7 @@ const DEFAULT_SETTINGS: Settings = {
   backendModel: "",
   customAgents: {},
   customTools: [],
+  widgets: ALL_WIDGETS.map((w) => w.id),
 };
 
 const MENU_BAR_H = 30;
@@ -294,10 +298,21 @@ export const useOS = create<OSState>()(
       // deep-merge so newly-added settings keys keep their defaults
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<OSState>;
+        const ps: Partial<Settings> = p.settings ?? {};
         return {
           ...current,
           ...p,
-          settings: { ...current.settings, ...(p.settings ?? {}) },
+          settings: {
+            ...current.settings,
+            ...ps,
+            // Append any new widget IDs not yet in the persisted list
+            widgets: ps.widgets
+              ? (() => {
+                  const saved: WidgetId[] = ps.widgets!;
+                  return [...saved, ...current.settings.widgets.filter((id) => !saved.includes(id))];
+                })()
+              : current.settings.widgets,
+          },
         };
       },
     },

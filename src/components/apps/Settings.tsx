@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useOS, type CustomToolDef } from "@/store/useOS";
 import { useAria } from "@/store/useAria";
 import { WALLPAPERS } from "@/lib/apps";
+import { ALL_WIDGETS } from "@/lib/widgets";
 import Icon from "@/components/ui/Icon";
 import {
   LOCAL_MODELS,
@@ -644,6 +645,32 @@ export default function Settings() {
               >
                 Light
               </button>
+            </div>
+          </Row>
+          <Row title="Desktop Widgets" desc="Toggle widgets on the desktop">
+            <div className="flex flex-wrap gap-2">
+              {ALL_WIDGETS.map((w) => {
+                const on = s.widgets.includes(w.id);
+                return (
+                  <button
+                    key={w.id}
+                    onClick={() =>
+                      set({
+                        widgets: on
+                          ? s.widgets.filter((x) => x !== w.id)
+                          : [...s.widgets, w.id],
+                      })
+                    }
+                    className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium ${
+                      on
+                        ? "border-accent/40 bg-accent/10 text-accent"
+                        : "border-line text-text2 hover:text-text1"
+                    }`}
+                  >
+                    {w.name}
+                  </button>
+                );
+              })}
             </div>
           </Row>
         </Section>
