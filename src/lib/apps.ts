@@ -135,6 +135,7 @@ export const APP_MAP: Record<AppId, AppMeta> = Object.fromEntries(
 /**
  * Vibrant mesh-gradient wallpapers — saturated like macOS Sonoma/Sequoia but
  * tuned dark enough that glass windows stay readable on top.
+ * Wallpapers with an `animation` field have extra motion layers.
  */
 export const WALLPAPERS = [
   {
@@ -161,6 +162,27 @@ export const WALLPAPERS = [
     id: "mint",
     name: "Mint",
     css: `radial-gradient(60% 80% at 16% 12%, #0f766e 0%, transparent 55%), radial-gradient(55% 70% at 86% 16%, #2563eb 0%, transparent 52%), radial-gradient(70% 70% at 74% 90%, #0d9488 0%, transparent 55%), radial-gradient(60% 60% at 8% 90%, #15803d 0%, transparent 50%), linear-gradient(165deg, #08130f, #050d0a)`,
+  },
+  {
+    id: "pulse",
+    name: "Pulse",
+    css: `radial-gradient(60% 80% at 18% 12%, #7c2d63 0%, transparent 55%), radial-gradient(60% 70% at 85% 20%, #d4572a 0%, transparent 52%), radial-gradient(70% 70% at 70% 92%, #8b2fbd 0%, transparent 55%), radial-gradient(60% 60% at 6% 88%, #b83a5a 0%, transparent 50%), linear-gradient(165deg, #160a14, #0a0610)`,
+    animation: "wpPulse",
+    colors: ["#7c2d63", "#d4572a", "#8b2fbd", "#b83a5a"],
+  },
+  {
+    id: "drift",
+    name: "Drift",
+    css: `radial-gradient(60% 80% at 15% 10%, #1e40af 0%, transparent 55%), radial-gradient(55% 70% at 85% 14%, #0e9ab0 0%, transparent 52%), radial-gradient(70% 70% at 75% 90%, #3b2a9d 0%, transparent 55%), radial-gradient(60% 60% at 8% 92%, #0d6e8c 0%, transparent 52%), linear-gradient(165deg, #07101f, #050a12)`,
+    animation: "wpDrift",
+    colors: ["#1e40af", "#0e9ab0", "#3b2a9d", "#0d6e8c"],
+  },
+  {
+    id: "aurora-live",
+    name: "Aurora Live",
+    css: `radial-gradient(60% 85% at 12% 8%, #5b2a9d 0%, transparent 58%), radial-gradient(55% 75% at 88% 12%, #2058d6 0%, transparent 55%), radial-gradient(65% 65% at 78% 88%, #c0297a 0%, transparent 52%), radial-gradient(70% 70% at 8% 92%, #0e8aa8 0%, transparent 52%), linear-gradient(165deg, #0d0a1f, #07060f)`,
+    animation: "wpAurora",
+    colors: ["#5b2a9d", "#2058d6", "#c0297a", "#0e8aa8"],
   },
 ] as const;
 

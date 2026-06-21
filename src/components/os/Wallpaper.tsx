@@ -7,11 +7,29 @@ export default function Wallpaper() {
   const wallpaper = useOS((s) => s.settings.wallpaper);
   const reduceMotion = useOS((s) => s.settings.reduceMotion);
   const wp = WALLPAPERS.find((w) => w.id === wallpaper) ?? WALLPAPERS[0];
+  const isAnimated = "animation" in wp && !reduceMotion;
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden">
       {/* base mesh gradient */}
       <div className="absolute inset-0" style={{ background: wp.css }} />
+
+      {/* animated overlay layers */}
+      {isAnimated && (
+        <>
+          {(wp as any).colors.map((c: string, i: number) => (
+            <div
+              key={i}
+              className="absolute inset-0 opacity-0 mix-blend-screen"
+              style={{
+                background: `radial-gradient(60% 70% at ${30 + i * 20}% ${20 + i * 15}%, ${c} 0%, transparent 55%)`,
+                animation: `${(wp as any).animation} ${6 + i * 2}s ease-in-out infinite`,
+                animationDelay: `${i * 1.5}s`,
+              }}
+            />
+          ))}
+        </>
+      )}
 
       {/* floating light blooms for life */}
       <div
