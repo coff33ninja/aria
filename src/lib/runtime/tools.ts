@@ -1,5 +1,6 @@
 import type { SearchResult, Tool, ToolResult } from "./types";
 import { IS_STATIC } from "@/lib/env";
+import { stripHtml } from "@/lib/strip-html";
 
 /** Direct, CORS-friendly Wikipedia search — used in the static build (no server). */
 async function wikipediaClient(query: string): Promise<{
@@ -15,7 +16,7 @@ async function wikipediaClient(query: string): Promise<{
   const results: SearchResult[] = (d?.query?.search || []).map(
     (x: { title: string; snippet: string }) => ({
       title: x.title,
-      snippet: x.snippet.replace(/<[^>]+>/g, ""),
+      snippet: stripHtml(x.snippet),
       url: `https://en.wikipedia.org/wiki/${encodeURIComponent(x.title.replace(/ /g, "_"))}`,
     }),
   );

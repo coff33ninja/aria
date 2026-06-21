@@ -48,12 +48,25 @@ export default function Assistant() {
   const [listening, setListening] = useState(false);
   const listenerRef = useRef<Listener | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (isNearBottomRef.current) {
+      scrollRef.current?.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   }, [chat]);
 
   const send = (text: string, spoken = false) => {

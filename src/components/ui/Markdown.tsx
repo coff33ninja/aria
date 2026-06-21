@@ -79,7 +79,7 @@ export default function Markdown({ text }: { text: string }) {
       }
       flush(key);
       if (!line.trim()) return;
-      const img = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
+      const img = line.match(/^!\[([^\]]*)\]\(((?:[^()]|\([^()]*\))*)\)\s*$/);
       if (img) {
         blocks.push(
           <div key={key} className="my-2">
