@@ -110,7 +110,6 @@ export default function Files() {
   const removeFile = useAria((s) => s.removeFile);
   const addFile = useAria((s) => s.addFile);
   const addFolder = useAria((s) => s.addFolder);
-  const moveFileToFolder = useAria((s) => s.moveFileToFolder);
   const [selId, setSelId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [dragOver, setDragOver] = useState(false);

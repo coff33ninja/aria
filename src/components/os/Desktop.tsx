@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { useOS } from "@/store/useOS";
+import { useOS, type SnapZone } from "@/store/useOS";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import Wallpaper from "./Wallpaper";
 import Boot from "./Boot";
@@ -19,6 +19,7 @@ export default function Desktop() {
   const [mounted, setMounted] = useState(false);
   const booted = useOS((s) => s.booted);
   const accent = useOS((s) => s.settings.accent);
+  const theme = useOS((s) => s.settings.theme);
   const spotlightOpen = useOS((s) => s.spotlightOpen);
   const setSpotlight = useOS((s) => s.setSpotlight);
   const wins = useOS((s) => s.wins);
@@ -29,6 +30,11 @@ export default function Desktop() {
   useEffect(() => {
     document.documentElement.style.setProperty("--accent", accent);
   }, [accent]);
+
+  // sync theme
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   // global keyboard shortcuts
   useEffect(() => {
@@ -49,14 +55,14 @@ export default function Desktop() {
         const activeWin = [...os.wins].sort((a, b) => b.z - a.z).find((w) => !w.minimized);
         if (!activeWin) return;
         const vp = { w: window.innerWidth, h: window.innerHeight };
-        const zoneMap: Record<string, string> = {
+        const zoneMap: Record<string, SnapZone> = {
           ArrowLeft: e.shiftKey ? "top-left" : "left",
           ArrowRight: e.shiftKey ? "bottom-right" : "right",
           ArrowUp: e.shiftKey ? "top-right" : "top",
           ArrowDown: e.shiftKey ? "bottom-left" : "bottom",
         };
         const zone = zoneMap[e.key];
-        if (zone) os.snapWin(activeWin.id, zone as any, vp);
+        if (zone) os.snapWin(activeWin.id, zone, vp);
       }
     };
     window.addEventListener("keydown", h);

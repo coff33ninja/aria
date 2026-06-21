@@ -1,37 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { guard } from "@/lib/api-guard";
+import { backendSchema } from "@/lib/api-schemas";
 
-interface Msg {
-  role: "user" | "assistant";
-  content: string;
-}
-
-interface Body {
-  backendUrl: string;
-  model?: string;
-  system: string;
-  prompt: string;
-  history?: Msg[];
-  stream?: boolean;
-}
+export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   const g = guard(req);
   if (g) return g;
 
-  let body: Body;
-  try {
-    body = (await req.json()) as Body;
-  } catch {
-    return NextResponse.json({ error: "Bad JSON" }, { status: 400 });
+  const parsed = backendSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
-
+  const body = parsed.data;
   const { backendUrl, system, prompt, stream } = body;
-  const history = (body.history || []).slice(-10);
-
-  if (!backendUrl) {
-    return NextResponse.json({ error: "Missing backend URL" }, { status: 400 });
-  }
+  const history = body.history || [];
 
   const model = body.model || "llama3.2";
 

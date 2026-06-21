@@ -12,7 +12,7 @@ import type {
   Mission,
   Subtask,
 } from "@/lib/types";
-import { AGENTS, getAgent } from "@/lib/agents";
+import { getAgent } from "@/lib/agents";
 import {
   extractName,
   isMission,

@@ -43,7 +43,7 @@ export default function Markdown({ text }: { text: string }) {
   segments.forEach((seg, si) => {
     if (si % 2 === 1) {
       // code block
-      const lines = seg.replace(/^[a-z]*\n/, "").trimEnd();
+      const lines = seg.replace(/^[a-zA-Z0-9+#]*\n/, "").trimEnd();
       blocks.push(
         <pre
           key={`code-${si}`}

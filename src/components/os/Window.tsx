@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useOS, type Win, type SnapZone } from "@/store/useOS";
 import { APP_MAP } from "@/lib/apps";
+import { cn } from "@/lib/cn";
 import Icon from "@/components/ui/Icon";
 import { AppView } from "@/components/apps/registry";
 
@@ -43,6 +44,14 @@ export default function Window({ win, active = true }: { win: Win; active?: bool
   const dragRef = useRef<{ ox: number; oy: number; sx: number; sy: number } | null>(
     null,
   );
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  const removeListeners = () => {
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+  };
+
+  useEffect(() => () => removeListeners(), []);
 
   const onTitlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
@@ -66,7 +75,7 @@ export default function Window({ win, active = true }: { win: Win; active?: bool
       const zone = detectSnapZone(nx, ny, cur.w, cur.h, vw, vh);
       setSnapPreview(zone);
     };
-    const up = (ev: PointerEvent) => {
+    const up = () => {
       const zone = detectSnapZone(
         useOS.getState().wins.find((w) => w.id === win.id)?.x ?? 0,
         useOS.getState().wins.find((w) => w.id === win.id)?.y ?? 0,
@@ -78,6 +87,9 @@ export default function Window({ win, active = true }: { win: Win; active?: bool
       }
       setSnapPreview(null);
       dragRef.current = null;
+      removeListeners();
+    };
+    cleanupRef.current = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
@@ -102,6 +114,9 @@ export default function Window({ win, active = true }: { win: Win; active?: bool
         resizeWin(win.id, nw, nh);
       };
       const up = () => {
+        removeListeners();
+      };
+      cleanupRef.current = () => {
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", up);
       };
@@ -143,16 +158,14 @@ export default function Window({ win, active = true }: { win: Win; active?: bool
         <div className="group/lights flex items-center gap-2" data-no-drag>
           <button
             onClick={() => closeWin(win.id)}
-            className="grid h-3 w-3 place-items-center rounded-full"
-            style={{ background: active ? "#ff5f57" : "#4b5160" }}
+            className={cn("grid h-3 w-3 place-items-center rounded-full", active ? "bg-[#ff5f57]" : "bg-[#4b5160]")}
             title="Close"
           >
             <Icon name="X" size={8} className="opacity-0 group-hover/lights:opacity-100" color="#5c0500" strokeWidth={3} />
           </button>
           <button
             onClick={() => minimizeWin(win.id)}
-            className="grid h-3 w-3 place-items-center rounded-full"
-            style={{ background: active ? "#febc2e" : "#4b5160" }}
+            className={cn("grid h-3 w-3 place-items-center rounded-full", active ? "bg-[#febc2e]" : "bg-[#4b5160]")}
             title="Minimize"
           >
             <Icon name="Minus" size={8} className="opacity-0 group-hover/lights:opacity-100" color="#5c3d00" strokeWidth={3} />
@@ -164,8 +177,7 @@ export default function Window({ win, active = true }: { win: Win; active?: bool
                 h: window.innerHeight,
               })
             }
-            className="grid h-3 w-3 place-items-center rounded-full"
-            style={{ background: active ? "#28c840" : "#4b5160" }}
+            className={cn("grid h-3 w-3 place-items-center rounded-full", active ? "bg-[#28c840]" : "bg-[#4b5160]")}
             title="Zoom"
           >
             <Icon name="Maximize2" size={7} className="opacity-0 group-hover/lights:opacity-100" color="#0a3d12" strokeWidth={3} />

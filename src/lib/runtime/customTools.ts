@@ -35,16 +35,16 @@ ${def.code}
 
 /** Merge custom tools into a tools record. */
 export function mergeCustomTools(
-  base: Record<string, { name: string; description: string; run: (args: any, ctx: ToolContext) => Promise<ToolResult> }>,
+  base: Record<string, { name: string; description: string; run: (args: Record<string, unknown>, ctx: ToolContext) => Promise<ToolResult> }>,
   customDefs: CustomToolDef[],
-): Record<string, { name: string; description: string; run: (args: any, ctx: ToolContext) => Promise<ToolResult> }> {
+): Record<string, { name: string; description: string; run: (args: Record<string, unknown>, ctx: ToolContext) => Promise<ToolResult> }> {
   const merged = { ...base };
   for (const def of customDefs) {
     if (!def.enabled || !def.name) continue;
     merged[def.name] = {
       name: def.name,
       description: def.description || "Custom tool",
-      run: (args: any, ctx: ToolContext) => runCustomTool(def, args as Record<string, unknown>, ctx),
+      run: (args: Record<string, unknown>, ctx: ToolContext) => runCustomTool(def, args, ctx),
     };
   }
   return merged;

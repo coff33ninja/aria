@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { guard } from "@/lib/api-guard";
+import { validateUrl } from "@/lib/validate-url";
+
+export const runtime = "edge";
 
 export async function GET(req: NextRequest) {
   const g = guard(req);
@@ -8,6 +11,8 @@ export async function GET(req: NextRequest) {
   if (!backendUrl) {
     return NextResponse.json({ error: "Missing backend URL" }, { status: 400 });
   }
+  const urlErr = validateUrl(backendUrl);
+  if (urlErr) return NextResponse.json({ error: urlErr }, { status: 400 });
 
   try {
     const r = await fetch(`${backendUrl.replace(/\/+$/, "")}/api/tags`);

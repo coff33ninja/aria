@@ -37,6 +37,7 @@ export type BrainKind = "simulated" | "api" | "local" | "backend";
 
 export interface Settings {
   accent: string;
+  theme: "dark" | "light";
   wallpaper: WallpaperId;
   voiceEnabled: boolean;
   reduceMotion: boolean;
@@ -107,6 +108,7 @@ interface OSState {
 
 const DEFAULT_SETTINGS: Settings = {
   accent: "#7c6cff",
+  theme: "dark",
   wallpaper: "aurora",
   voiceEnabled: true,
   reduceMotion: false,

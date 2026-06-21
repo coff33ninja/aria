@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useOS, type CustomToolDef } from "@/store/useOS";
 import { useAria } from "@/store/useAria";
 import { WALLPAPERS } from "@/lib/apps";
@@ -131,7 +131,7 @@ function BackendPanel() {
   const [healthy, setHealthy] = useState<boolean | null>(null);
   const [delErr, setDelErr] = useState("");
 
-  const loadModels = async () => {
+  const loadModels = useCallback(async () => {
     setFetchErr("");
     try {
       const [list, ok] = await Promise.all([
@@ -144,9 +144,9 @@ function BackendPanel() {
       setFetchErr(e instanceof Error ? e.message : String(e));
       setHealthy(false);
     }
-  };
+  }, [backendUrl]);
 
-  useEffect(() => { loadModels(); }, [backendUrl]);
+  useEffect(() => { loadModels(); }, [loadModels]);
 
   const doPull = async (model: string) => {
     if (!model) return;
@@ -625,6 +625,26 @@ export default function Settings() {
           </Row>
           <Row title="Reduce motion" desc="Calms animations across the OS">
             <Switch on={s.reduceMotion} onClick={() => set({ reduceMotion: !s.reduceMotion })} />
+          </Row>
+          <Row title="Theme" desc="Dark or light appearance">
+            <div className="flex gap-1 rounded-lg bg-white/5 p-0.5">
+              <button
+                onClick={() => set({ theme: "dark" })}
+                className={`rounded-md px-3 py-1 text-xs font-medium ${
+                  s.theme === "dark" ? "bg-white/10 text-text0" : "text-text2 hover:text-text1"
+                }`}
+              >
+                Dark
+              </button>
+              <button
+                onClick={() => set({ theme: "light" })}
+                className={`rounded-md px-3 py-1 text-xs font-medium ${
+                  s.theme === "light" ? "bg-white/10 text-text0" : "text-text2 hover:text-text1"
+                }`}
+              >
+                Light
+              </button>
+            </div>
           </Row>
         </Section>
 

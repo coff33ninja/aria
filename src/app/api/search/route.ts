@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { guard } from "@/lib/api-guard";
+import { searchSchema } from "@/lib/api-schemas";
 
 export const runtime = "edge";
 
@@ -86,15 +87,11 @@ export async function POST(req: NextRequest) {
   const g = guard(req);
   if (g) return g;
 
-  let query = "";
-  try {
-    ({ query } = await req.json());
-  } catch {
-    return NextResponse.json({ error: "Bad JSON" }, { status: 400 });
+  const parsed = searchSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
-  if (!query || query.length < 2) {
-    return NextResponse.json({ results: [], source: "none" });
-  }
+  const { query } = parsed.data;
 
   const tavilyKey = process.env.TAVILY_API_KEY;
   try {

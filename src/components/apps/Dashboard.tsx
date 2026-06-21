@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAria } from "@/store/useAria";
 import { AGENTS, AGENT_LIST } from "@/lib/agents";
 import { AreaChart, Bars, Ring, Sparkline } from "@/components/ui/Charts";
@@ -43,6 +43,8 @@ export default function Dashboard() {
   const status = useAria((s) => s.agentStatus);
   const working = Object.values(status).filter((v) => v === "working").length;
 
+  const [now] = useState(() => Date.now());
+
   const agentLoad = useMemo(() => {
     const counts: Record<string, number> = {};
     missions.forEach((m) =>
@@ -64,7 +66,6 @@ export default function Dashboard() {
   /** Cumulative mission completions over last 24 buckets (each = 1h window). */
   const throughputBuckets = useMemo(() => {
     if (!missions.length) return [];
-    const now = Date.now();
     const bucketMs = 3600000;
     const buckets = Math.max(6, Math.min(24, Math.ceil((now - missions[missions.length - 1]?.createdAt) / bucketMs) + 1));
     const b: number[] = new Array(buckets).fill(0);
@@ -76,12 +77,11 @@ export default function Dashboard() {
     }
     for (let i = 1; i < buckets; i++) b[i] += b[i - 1];
     return b;
-  }, [missions]);
+  }, [missions, now]);
 
   /** Cumulative tokens per bucket (same windows as throughput). */
   const tokenBuckets = useMemo(() => {
     if (!missions.length) return [];
-    const now = Date.now();
     const bucketMs = 3600000;
     const buckets = Math.max(6, Math.min(24, Math.ceil((now - missions[missions.length - 1]?.createdAt) / bucketMs) + 1));
     const b: number[] = new Array(buckets).fill(0);
@@ -94,7 +94,7 @@ export default function Dashboard() {
     }
     for (let i = 1; i < buckets; i++) if (!b[i]) b[i] = b[i - 1];
     return b;
-  }, [missions]);
+  }, [missions, now]);
 
   /** Subtask duration data (ms) for sparkline. */
   const subTaskDurations = useMemo(() => {

@@ -18,6 +18,7 @@ export default function Dock() {
 
   const [mouseX, setMouseX] = useState<number | null>(null);
   const [bouncing, setBouncing] = useState<string | null>(null);
+  const bounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const centers = useRef<Record<string, number>>({});
   const dockRef = useRef<HTMLDivElement>(null);
 
@@ -32,7 +33,10 @@ export default function Dock() {
   useEffect(() => {
     measure();
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      if (bounceTimer.current) clearTimeout(bounceTimer.current);
+    };
   }, []);
 
   const scaleFor = (id: string) => {
@@ -45,8 +49,9 @@ export default function Dock() {
   };
 
   const launch = (appId: AppId) => {
+    if (bounceTimer.current) clearTimeout(bounceTimer.current);
     setBouncing(appId);
-    setTimeout(() => setBouncing((b) => (b === appId ? null : b)), 720);
+    bounceTimer.current = setTimeout(() => setBouncing((b) => (b === appId ? null : b)), 720);
     openApp(appId);
   };
 
@@ -76,6 +81,7 @@ export default function Dock() {
               onClick={() => launch(app.id)}
               className="group relative flex flex-col items-center"
               title={app.name}
+              aria-label={app.name}
             >
               <motion.div
                 className={`grid place-items-center rounded-xl border border-white/10 ${
@@ -112,6 +118,7 @@ export default function Dock() {
           onClick={() => setSpotlight(true)}
           className="group relative flex flex-col items-center"
           title="Spotlight"
+          aria-label="Spotlight"
         >
           <motion.div
             className="grid place-items-center rounded-xl border border-white/10 bg-white/5"

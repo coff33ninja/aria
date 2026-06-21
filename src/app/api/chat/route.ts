@@ -1,25 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { guard } from "@/lib/api-guard";
+import { chatSchema } from "@/lib/api-schemas";
+import type { z } from "zod";
+
+type Body = z.infer<typeof chatSchema>;
 
 export const runtime = "edge";
 
-interface Msg {
-  role: "user" | "assistant";
-  content: string;
-}
-
-interface Body {
-  provider: "openai" | "anthropic";
-  apiKey: string;
-  model?: string;
-  system: string;
-  prompt: string;
-  history?: Msg[];
-  stream?: boolean;
-}
-
-function sse(data: string): Uint8Array {
-  return new TextEncoder().encode(`data: ${data}\n\n`);
+const API_KEY_RE = /[a-zA-Z0-9_-]{20,}/g;
+function sanitize(msg: string): string {
+  return msg.replace(API_KEY_RE, "***");
 }
 
 async function streamOpenAI(body: Body): Promise<Response> {
@@ -44,7 +34,7 @@ async function streamOpenAI(body: Body): Promise<Response> {
   if (!r.ok) {
     const data = await r.json().catch(() => ({}));
     return NextResponse.json(
-      { error: data?.error?.message || "OpenAI error" },
+      { error: sanitize(data?.error?.message || "OpenAI error") },
       { status: r.status },
     );
   }
@@ -106,7 +96,7 @@ async function streamAnthropic(body: Body): Promise<Response> {
   if (!r.ok) {
     const data = await r.json().catch(() => ({}));
     return NextResponse.json(
-      { error: data?.error?.message || "Anthropic error" },
+      { error: sanitize(data?.error?.message || "Anthropic error") },
       { status: r.status },
     );
   }
@@ -153,18 +143,13 @@ export async function POST(req: NextRequest) {
   const g = guard(req);
   if (g) return g;
 
-  let body: Body;
-  try {
-    body = (await req.json()) as Body;
-  } catch {
-    return NextResponse.json({ error: "Bad JSON" }, { status: 400 });
+  const parsed = chatSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
-
+  const body = parsed.data;
   const { provider, apiKey, system, prompt, stream } = body;
-  const history = (body.history || []).slice(-10);
-  if (!apiKey) {
-    return NextResponse.json({ error: "Missing API key" }, { status: 400 });
-  }
+  const history = body.history || [];
 
   try {
     if (stream) {
@@ -190,7 +175,7 @@ export async function POST(req: NextRequest) {
       const data = await r.json();
       if (!r.ok) {
         return NextResponse.json(
-          { error: data?.error?.message || "Anthropic error" },
+          { error: sanitize(data?.error?.message || "Anthropic error") },
           { status: r.status },
         );
       }
@@ -221,7 +206,7 @@ export async function POST(req: NextRequest) {
     const data = await r.json();
     if (!r.ok) {
       return NextResponse.json(
-        { error: data?.error?.message || "OpenAI error" },
+        { error: sanitize(data?.error?.message || "OpenAI error") },
         { status: r.status },
       );
     }
@@ -229,7 +214,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ text });
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Upstream error" },
+      { error: e instanceof Error ? sanitize(e.message) : "Upstream error" },
       { status: 502 },
     );
   }

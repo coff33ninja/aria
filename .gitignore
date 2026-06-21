@@ -35,8 +35,16 @@ dev-server-error.log
 # package lock (not tracked)
 package-lock.json
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files (commit .env.example, ignore local overrides)
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# python
+.venv/
+__pycache__/
+*.pyc
 
 # vercel
 .vercel
