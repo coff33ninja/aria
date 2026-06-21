@@ -4,12 +4,16 @@ echo Installing dependencies...
 call npm install
 echo.
 echo Verifying build...
-npx next build
-if %errorlevel% neq 0 (
-    echo Build failed. Fix errors above before starting the dev server.
+call npx next build
+if errorlevel 1 (
+    echo.
+    echo === BUILD FAILED ===
+    echo Scroll up to see errors, then fix them and run this script again.
     pause
-    exit /b %errorlevel%
+    exit /b 1
 )
+echo.
 echo Starting Aria dev server...
-npm run dev
+echo.
+call npm run dev
 pause

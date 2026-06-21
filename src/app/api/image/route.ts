@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { guard } from "@/lib/api-guard";
 
 export const runtime = "edge";
 
@@ -9,9 +8,6 @@ export const runtime = "edge";
  * by default (Pollinations); the bytes are served from our own origin.
  */
 export async function GET(req: NextRequest) {
-  const g = guard(req);
-  if (g) return g;
-
   const { searchParams } = new URL(req.url);
   const prompt = (searchParams.get("prompt") || "").slice(0, 300);
   const seed = searchParams.get("seed") || "1";
