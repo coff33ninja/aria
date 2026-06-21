@@ -8,6 +8,7 @@ import type {
   AgentMessage,
   ChatMessage,
   FileDoc,
+  FolderDoc,
   Mission,
   Subtask,
 } from "@/lib/types";
@@ -167,6 +168,7 @@ interface AriaState {
   chat: ChatMessage[];
   missions: Mission[];
   files: FileDoc[];
+  folders: FolderDoc[];
   bus: AgentMessage[];
   agentStatus: Record<AgentId, "idle" | "working" | "done">;
   activeMissionId: string | null;
@@ -182,6 +184,11 @@ interface AriaState {
   removeFile: (id: string) => void;
   addNote: (name: string, content: string) => string;
   updateFile: (id: string, patch: { name?: string; content?: string }) => void;
+  addFile: (file: Omit<FileDoc, "id" | "ts">) => string;
+  addFolder: (name: string, parentId?: string) => string;
+  removeFolder: (id: string) => void;
+  renameFolder: (id: string, name: string) => void;
+  moveFileToFolder: (fileId: string, folderId?: string) => void;
   addContextDoc: (title: string, content: string) => void;
   removeContextDoc: (id: string) => void;
   embedAndStore: (text: string, source: MemoryEntry["source"]) => Promise<void>;
@@ -211,6 +218,7 @@ export const useAria = create<AriaState>()(
       ],
       missions: [],
       files: [],
+      folders: [],
       bus: [],
       agentStatus: idleStatus(),
       activeMissionId: null,
@@ -258,6 +266,38 @@ export const useAria = create<AriaState>()(
           files: s.files.map((f) => (f.id === id ? { ...f, ...patch } : f)),
         })),
 
+      addFile: (file) => {
+        const id = nanoid(8);
+        set((s) => ({
+          files: [{ ...file, id, ts: Date.now() } as FileDoc, ...s.files],
+        }));
+        return id;
+      },
+
+      addFolder: (name, parentId) => {
+        const id = nanoid(8);
+        set((s) => ({
+          folders: [...s.folders, { id, name, parentId, createdAt: Date.now() }],
+        }));
+        return id;
+      },
+
+      removeFolder: (id) =>
+        set((s) => ({
+          folders: s.folders.filter((f) => f.id !== id),
+          files: s.files.map((f) => (f.folderId === id ? { ...f, folderId: undefined } : f)),
+        })),
+
+      renameFolder: (id, name) =>
+        set((s) => ({
+          folders: s.folders.map((f) => (f.id === id ? { ...f, name } : f)),
+        })),
+
+      moveFileToFolder: (fileId, folderId) =>
+        set((s) => ({
+          files: s.files.map((f) => (f.id === fileId ? { ...f, folderId } : f)),
+        })),
+
       addContextDoc: (title, content) =>
         set((s) => ({
           contextDocs: [...s.contextDocs, { id: nanoid(8), title, content }],
@@ -291,6 +331,7 @@ export const useAria = create<AriaState>()(
         set({
           missions: [],
           files: [],
+          folders: [],
           bus: [],
           agentStatus: idleStatus(),
           activeMissionId: null,
@@ -696,6 +737,7 @@ export const useAria = create<AriaState>()(
       partialize: (s) => ({
         chat: s.chat,
         files: s.files,
+        folders: s.folders,
         missions: s.missions,
         memory: s.memory,
         contextDocs: s.contextDocs,

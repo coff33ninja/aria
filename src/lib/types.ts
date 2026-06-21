@@ -70,6 +70,13 @@ export interface ChatMessage {
   missionId?: string;
 }
 
+export interface FolderDoc {
+  id: string;
+  name: string;
+  parentId?: string;
+  createdAt: number;
+}
+
 export interface FileDoc {
   id: string;
   name: string;
@@ -78,5 +85,6 @@ export interface FileDoc {
   content: string;
   createdBy: AgentId | "you";
   missionId?: string;
+  folderId?: string;
   ts: number;
 }
