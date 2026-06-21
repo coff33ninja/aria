@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useAria } from "@/store/useAria";
 import { AGENTS } from "@/lib/agents";
 import type { FileDoc } from "@/lib/types";
@@ -111,13 +111,19 @@ export default function Files() {
   const addFile = useAria((s) => s.addFile);
   const addFolder = useAria((s) => s.addFolder);
   const moveFileToFolder = useAria((s) => s.moveFileToFolder);
-  const [selId, setSelId] = useState<string | null>(files[0]?.id ?? null);
+  const [selId, setSelId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [dragFolderId, setDragFolderId] = useState<string | undefined>(undefined);
   const dropRef = useRef<HTMLDivElement>(null);
 
   const sel = files.find((f) => f.id === selId) ?? null;
+
+  useEffect(() => {
+    if (files.length > 0 && (!selId || !files.find((f) => f.id === selId))) {
+      setSelId(files[0].id);
+    }
+  }, [files, selId]);
 
   const author = (f: FileDoc) =>
     f.createdBy === "you" ? "You" : AGENTS[f.createdBy]?.name ?? "Aria";
@@ -318,8 +324,9 @@ export default function Files() {
               </button>
               <button
                 onClick={() => {
+                  const next = useAria.getState().files.filter((f) => f.id !== sel.id);
                   removeFile(sel.id);
-                  setSelId(files[0]?.id ?? null);
+                  setSelId(next[0]?.id ?? null);
                 }}
                 className="rounded-lg p-1.5 text-text3 hover:bg-bad/20 hover:text-bad"
                 title="Delete"
@@ -355,6 +362,7 @@ export default function Files() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               setDragOver(false);
               handleDrop(e);
             }}
