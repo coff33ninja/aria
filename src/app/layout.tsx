@@ -25,6 +25,7 @@ export const metadata: Metadata = {
   },
   description: DESC,
   applicationName: "Aria",
+  manifest: "/manifest.json",
   authors: [{ name: "Sumanth Kumar M", url: "https://sumanthkm.com" }],
   creator: "Sumanth Kumar M",
   alternates: { canonical: `${SITE}/` },
@@ -104,6 +105,11 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `"serviceWorker" in navigator && navigator.serviceWorker.register("/sw.js")["catch"](()=>{})`,
+          }}
         />
         {children}
       </body>

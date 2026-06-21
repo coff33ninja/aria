@@ -1,0 +1,19 @@
+{
+  "name": "Aria — AI Operating System",
+  "short_name": "Aria",
+  "description": "Your AI operating system in the browser — multi-agent brain, local LLM, live web search, code execution, and more.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05060a",
+  "theme_color": "#05060a",
+  "orientation": "any",
+  "categories": ["developer-tools", "productivity", "artificial-intelligence"],
+  "icons": [
+    {
+      "src": "/window.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
