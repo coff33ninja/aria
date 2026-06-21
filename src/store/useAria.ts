@@ -20,7 +20,7 @@ import {
   smallTalk,
   synthesize,
 } from "@/lib/simEngine";
-import { callReal } from "@/lib/realEngine";
+import { callReal, callRealStream } from "@/lib/realEngine";
 import { searchWeb, formatResearch, generateImageUrl } from "@/lib/runtime/tools";
 import { runJs } from "@/lib/runtime/exec";
 import { localComplete, localReady } from "@/lib/runtime/localBrain";
@@ -333,22 +333,33 @@ export const useAria = create<AriaState>()(
             content: m.text,
           }));
 
-        if (os.settings.brain === "backend") {
+        if (os.settings.brain === "backend" || (os.settings.brain === "api" && os.settings.apiKey)) {
           try {
             const streamSys = withContext(`You are Aria, a warm, concise AI operating system assistant with a team of agents. Reply in 1-3 sentences.${ctx.name ? ` The user's name is ${ctx.name}.` : ""}`);
-            await callBackendStream(
-              { backendUrl: os.settings.backendUrl, model: os.settings.backendModel || undefined },
-              streamSys,
-              trimmed,
-              (token) => patchAria(get().chat.find((m) => m.id === ariaMsg.id)?.text + token || token),
-              history,
-            );
+            if (os.settings.brain === "backend") {
+              await callBackendStream(
+                { backendUrl: os.settings.backendUrl, model: os.settings.backendModel || undefined },
+                streamSys,
+                trimmed,
+                (token) => patchAria(get().chat.find((m) => m.id === ariaMsg.id)?.text + token || token),
+                history,
+              );
+            } else {
+              await callRealStream(
+                { provider: os.settings.apiProvider, apiKey: os.settings.apiKey, model: os.settings.apiModel || undefined },
+                streamSys,
+                trimmed,
+                (token) => patchAria(get().chat.find((m) => m.id === ariaMsg.id)?.text + token || token),
+                history,
+              );
+            }
           } catch {
             const fallback = smallTalk(trimmed, ctx);
             await typeStream(fallback, patchAria);
           }
           finishAria();
           set({ busy: false });
+          if (spoken && os.settings.voiceEnabled) speak(get().chat.find((m) => m.id === ariaMsg.id)?.text || "");
           return;
         }
         const sys = `You are Aria, a warm, concise AI operating system assistant with a team of agents. Reply in 1-3 sentences.${
@@ -579,7 +590,6 @@ export const useAria = create<AriaState>()(
           color: "#7c6cff",
         });
 
-        setTimeout(() => set({ agentStatus: idleStatus() }), 2500);
         return result;
       },
     }),
