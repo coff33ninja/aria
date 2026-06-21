@@ -199,27 +199,28 @@ export default function Terminal() {
             {l.text}
           </pre>
         ))}
-        <div className="flex items-center gap-1.5 text-[12.5px]">
-          <span className="text-good">aria@os</span>
-          <span className="text-text3">~</span>
-          <span className="text-accent">%</span>
-          <input
-            ref={inputRef}
+        <div className="flex gap-1.5 text-[12.5px]">
+          <span className="mt-0.5 shrink-0 text-good">aria@os</span>
+          <span className="mt-0.5 shrink-0 text-text3">~</span>
+          <span className="mt-0.5 shrink-0 text-accent">%</span>
+          <textarea
+            ref={inputRef as unknown as React.RefObject<HTMLTextAreaElement>}
             autoFocus
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
                 exec(input);
                 setInput("");
-              } else if (e.key === "ArrowUp") {
+              } else if (e.key === "ArrowUp" && !input.includes("\n")) {
                 e.preventDefault();
                 setHIdx((i) => {
                   const n = Math.min(history.length - 1, i + 1);
                   setInput(history[n] || "");
                   return n;
                 });
-              } else if (e.key === "ArrowDown") {
+              } else if (e.key === "ArrowDown" && !input.includes("\n")) {
                 e.preventDefault();
                 setHIdx((i) => {
                   const n = Math.max(-1, i - 1);
@@ -228,7 +229,8 @@ export default function Terminal() {
                 });
               }
             }}
-            className="flex-1 bg-transparent text-text0 caret-accent2 outline-none"
+            rows={Math.max(1, input.split("\n").length)}
+            className="min-h-[20px] flex-1 resize-none bg-transparent text-text0 caret-accent2 outline-none"
             spellCheck={false}
           />
         </div>
