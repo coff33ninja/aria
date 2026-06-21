@@ -8,6 +8,7 @@ export type AppId =
   | "terminal"
   | "files"
   | "notes"
+  | "missions"
   | "settings";
 
 export interface AppMeta {
@@ -101,6 +102,17 @@ export const APPS: AppMeta[] = [
     h: 580,
     minW: 400,
     minH: 340,
+    dock: true,
+  },
+  {
+    id: "missions",
+    name: "Missions",
+    icon: "ListChecks",
+    color: "#f472b6",
+    w: 860,
+    h: 620,
+    minW: 560,
+    minH: 400,
     dock: true,
   },
   {

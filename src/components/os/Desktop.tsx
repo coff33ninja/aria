@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useOS } from "@/store/useOS";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import Wallpaper from "./Wallpaper";
 import Boot from "./Boot";
 import DesktopWidgets from "./DesktopWidgets";
@@ -58,10 +59,16 @@ export default function Desktop() {
         <>
           <DesktopWidgets />
           <MenuBar />
-          <WindowManager />
+          <ErrorBoundary label="Window Manager">
+            <WindowManager />
+          </ErrorBoundary>
           <Dock />
-          <Spotlight />
-          <ControlCenter />
+          <ErrorBoundary label="Spotlight">
+            <Spotlight />
+          </ErrorBoundary>
+          <ErrorBoundary label="Control Center">
+            <ControlCenter />
+          </ErrorBoundary>
           <Notifications />
           <VoiceOrb />
           {/* spotlight hint, bottom-left */}
