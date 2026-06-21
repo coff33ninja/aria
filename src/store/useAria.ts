@@ -11,7 +11,7 @@ import type {
   Mission,
   Subtask,
 } from "@/lib/types";
-import { AGENTS } from "@/lib/agents";
+import { AGENTS, getAgent } from "@/lib/agents";
 import {
   extractName,
   isMission,
@@ -24,6 +24,7 @@ import { callReal } from "@/lib/realEngine";
 import { searchWeb, formatResearch, generateImageUrl } from "@/lib/runtime/tools";
 import { runJs } from "@/lib/runtime/exec";
 import { localComplete, localReady } from "@/lib/runtime/localBrain";
+import { callBackend, callBackendStream } from "@/lib/runtime/backendBrain";
 import { useOS, type Settings } from "./useOS";
 import { speak } from "@/lib/voice";
 
@@ -42,6 +43,7 @@ async function think(
   prompt: string,
   history: Turn[] = [],
 ): Promise<string | null> {
+  system = withContext(system);
   if (settings.brain === "local" && localReady(settings.localModel)) {
     try {
       return await localComplete(system, prompt, history);
@@ -65,7 +67,29 @@ async function think(
       return null;
     }
   }
+  if (settings.brain === "backend") {
+    try {
+      return await callBackend(
+        { backendUrl: settings.backendUrl, model: settings.backendModel || undefined },
+        system,
+        prompt,
+        history,
+      );
+    } catch {
+      return null;
+    }
+  }
   return null;
+}
+
+/** Append context docs to a system prompt. */
+function withContext(system: string): string {
+  const docs = useAria.getState().contextDocs;
+  if (!docs.length) return system;
+  const ctx = docs
+    .map((d) => `[${d.title}]\n${d.content}`)
+    .join("\n\n");
+  return `${system}\n\nReference context you must use:\n${ctx}`;
 }
 
 /** Stream `full` out in small chunks, calling onChunk with the text-so-far. */
@@ -91,6 +115,12 @@ const FILE_FOR: Partial<Record<AgentId, { kind: FileDoc["kind"]; name: string }>
   ledger: { kind: "data", name: "analysis.md" },
 };
 
+export interface ContextDoc {
+  id: string;
+  title: string;
+  content: string;
+}
+
 interface AriaState {
   chat: ChatMessage[];
   missions: Mission[];
@@ -101,6 +131,7 @@ interface AriaState {
   tokens: number;
   busy: boolean;
   memory: { name?: string };
+  contextDocs: ContextDoc[];
 
   sendChat: (text: string, spoken?: boolean) => Promise<void>;
   runMission: (prompt: string) => Promise<string>;
@@ -108,6 +139,8 @@ interface AriaState {
   removeFile: (id: string) => void;
   addNote: (name: string, content: string) => string;
   updateFile: (id: string, patch: { name?: string; content?: string }) => void;
+  addContextDoc: (title: string, content: string) => void;
+  removeContextDoc: (id: string) => void;
   reset: () => void;
 }
 
@@ -140,6 +173,7 @@ export const useAria = create<AriaState>()(
       tokens: 0,
       busy: false,
       memory: {},
+      contextDocs: [],
 
       clearChat: () =>
         set({
@@ -179,6 +213,16 @@ export const useAria = create<AriaState>()(
           files: s.files.map((f) => (f.id === id ? { ...f, ...patch } : f)),
         })),
 
+      addContextDoc: (title, content) =>
+        set((s) => ({
+          contextDocs: [...s.contextDocs, { id: nanoid(8), title, content }],
+        })),
+
+      removeContextDoc: (id) =>
+        set((s) => ({
+          contextDocs: s.contextDocs.filter((d) => d.id !== id),
+        })),
+
       reset: () =>
         set({
           missions: [],
@@ -187,6 +231,7 @@ export const useAria = create<AriaState>()(
           agentStatus: idleStatus(),
           activeMissionId: null,
           tokens: 0,
+          contextDocs: [],
         }),
 
       sendChat: async (text, spoken = false) => {
@@ -288,6 +333,24 @@ export const useAria = create<AriaState>()(
             content: m.text,
           }));
 
+        if (os.settings.brain === "backend") {
+          try {
+            const streamSys = withContext(`You are Aria, a warm, concise AI operating system assistant with a team of agents. Reply in 1-3 sentences.${ctx.name ? ` The user's name is ${ctx.name}.` : ""}`);
+            await callBackendStream(
+              { backendUrl: os.settings.backendUrl, model: os.settings.backendModel || undefined },
+              streamSys,
+              trimmed,
+              (token) => patchAria(get().chat.find((m) => m.id === ariaMsg.id)?.text + token || token),
+              history,
+            );
+          } catch {
+            const fallback = smallTalk(trimmed, ctx);
+            await typeStream(fallback, patchAria);
+          }
+          finishAria();
+          set({ busy: false });
+          return;
+        }
         const sys = `You are Aria, a warm, concise AI operating system assistant with a team of agents. Reply in 1-3 sentences.${
           ctx.name ? ` The user's name is ${ctx.name}.` : ""
         }`;
@@ -359,7 +422,7 @@ export const useAria = create<AriaState>()(
         setMission({ status: "running" });
 
         const runTask = async (task: Subtask) => {
-          const ag = AGENTS[task.agentId];
+          const ag = getAgent(task.agentId, useOS.getState().settings.customAgents);
           setStatus(task.agentId, "working");
           patchTask(task.id, { status: "running", startedAt: Date.now() });
           post({ from: task.agentId, text: `Picking up: ${task.title}.` });
@@ -499,7 +562,7 @@ export const useAria = create<AriaState>()(
               name: `${slug || "mission"}.md`,
               kind: "md",
               content: `# ${title}\n\n${result}\n\n---\n\n${subtasks
-                .map((t) => `## ${AGENTS[t.agentId].name} — ${t.title}\n\n${t.output}`)
+                .map((t) => `## ${getAgent(t.agentId, useOS.getState().settings.customAgents).name} — ${t.title}\n\n${t.output}`)
                 .join("\n\n")}`,
               createdBy: "atlas",
               missionId: mid,
@@ -524,9 +587,11 @@ export const useAria = create<AriaState>()(
       name: "aria-data",
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({
+        chat: s.chat,
         files: s.files,
         missions: s.missions,
         memory: s.memory,
+        contextDocs: s.contextDocs,
       }),
     },
   ),

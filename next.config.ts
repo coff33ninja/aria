@@ -17,6 +17,8 @@ const nextConfig: NextConfig = isStatic
         NEXT_PUBLIC_BASE_PATH: "/aria",
       },
     }
-  : {};
+  : {
+      allowedDevOrigins: ["127.0.0.1"],
+    };
 
 export default nextConfig;

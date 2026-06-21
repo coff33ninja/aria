@@ -90,6 +90,16 @@ export function agent(id: AgentId): Agent {
   return AGENTS[id];
 }
 
+/** Merge built-in agent with custom overrides (from Settings). */
+export function getAgent(
+  id: AgentId,
+  overrides?: Record<string, { system: string }>,
+): Agent {
+  const base = AGENTS[id];
+  const ov = overrides?.[id];
+  return ov ? { ...base, ...ov } : base;
+}
+
 /** Aria's own identity — the face/voice of the OS. */
 export const ARIA = {
   name: "Aria",

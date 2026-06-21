@@ -35,11 +35,14 @@ export default function Assistant() {
 
   const local = brain === "local" && localReady(localModel);
   const live = brain === "api" && !!apiKey;
+  const backend = brain === "backend";
   const badge = local
     ? { icon: "Cpu", color: "#a78bfa", label: "Local", title: "Runs in your browser — fully private" }
     : live
       ? { icon: "Globe", color: "#22d3ee", label: `Live · ${provider}`, title: `Sent to ${provider} with your key` }
-      : { icon: "ShieldCheck", color: "#34d399", label: "On-device", title: "Nothing leaves your browser" };
+      : backend
+        ? { icon: "Server", color: "#f59e0b", label: "Backend", title: "Runs on your local server" }
+        : { icon: "ShieldCheck", color: "#34d399", label: "On-device", title: "Nothing leaves your browser" };
 
   const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);

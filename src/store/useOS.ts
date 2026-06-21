@@ -28,7 +28,7 @@ export interface Notif {
   ts: number;
 }
 
-export type BrainKind = "simulated" | "api" | "local";
+export type BrainKind = "simulated" | "api" | "local" | "backend";
 
 export interface Settings {
   accent: string;
@@ -44,6 +44,11 @@ export interface Settings {
   apiModel: string;
   /** selected in-browser model id */
   localModel: string;
+  /** backend (Ollama / local server) */
+  backendUrl: string;
+  backendModel: string;
+  /** custom agent system prompt overrides */
+  customAgents: Record<string, { system: string }>;
 }
 
 interface OSState {
@@ -92,6 +97,9 @@ const DEFAULT_SETTINGS: Settings = {
   apiKey: "",
   apiModel: "",
   localModel: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+  backendUrl: "http://localhost:11434",
+  backendModel: "",
+  customAgents: {},
 };
 
 const MENU_BAR_H = 30;

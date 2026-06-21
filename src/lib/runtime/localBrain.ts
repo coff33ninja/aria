@@ -40,8 +40,45 @@ export const LOCAL_MODELS: LocalModel[] = [
   },
 ];
 
+function browserName(): string {
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  if (ua.includes("Firefox")) return "firefox";
+  if (ua.includes("Edg")) return "edge";
+  if (ua.includes("Chrome")) return "chrome";
+  return "other";
+}
+
+export interface BrowserSupport {
+  supported: boolean;
+  browser: string;
+  guidance: string;
+}
+
+export function browserSupport(): BrowserSupport {
+  const hasGpu = typeof navigator !== "undefined" && "gpu" in navigator;
+  const browser = browserName();
+
+  if (browser === "firefox") {
+    return {
+      supported: hasGpu,
+      browser: "Firefox",
+      guidance: hasGpu
+        ? "WebGPU is experimental in Firefox. If you see GPU errors, use Chrome or Edge instead."
+        : 'Firefox requires WebGPU to be enabled. Go to about:config, set dom.webgpu.enabled to true, or use Chrome/Edge.',
+    };
+  }
+  if (!hasGpu) {
+    return {
+      supported: false,
+      browser: browser,
+      guidance: "WebGPU not available. Use Chrome or Edge on desktop.",
+    };
+  }
+  return { supported: true, browser, guidance: "" };
+}
+
 export function webgpuAvailable(): boolean {
-  return typeof navigator !== "undefined" && "gpu" in navigator;
+  return browserSupport().supported;
 }
 
 let engine: any = null;
@@ -68,9 +105,8 @@ export async function loadLocalModel(
 ): Promise<void> {
   if (engine && loadedModel === modelId) return;
   if (!webgpuAvailable()) {
-    throw new Error(
-      "WebGPU isn't available in this browser. Try Chrome or Edge on desktop.",
-    );
+    const info = browserSupport();
+    throw new Error(info.guidance || "WebGPU not available in this browser.");
   }
   const webllm = await import("@mlc-ai/web-llm");
   // unload a previously-loaded different model
@@ -83,10 +119,21 @@ export async function loadLocalModel(
     engine = null;
     loadedModel = "";
   }
-  engine = await webllm.CreateMLCEngine(modelId, {
-    initProgressCallback: (r: { progress: number; text: string }) =>
-      onProgress?.({ progress: r.progress ?? 0, text: r.text ?? "" }),
-  });
+  try {
+    engine = await webllm.CreateMLCEngine(modelId, {
+      initProgressCallback: (r: { progress: number; text: string }) =>
+        onProgress?.({ progress: r.progress ?? 0, text: r.text ?? "" }),
+    });
+  } catch (e) {
+    const info = browserSupport();
+    const msg = e instanceof Error ? e.message : String(e);
+    if (info.browser === "Firefox") {
+      throw new Error(
+        `${msg}\n\nFirefox WebGPU is experimental. If this keeps failing, use Chrome or Edge — no changes needed, the same model works there.`,
+      );
+    }
+    throw e;
+  }
   loadedModel = modelId;
 }
 
