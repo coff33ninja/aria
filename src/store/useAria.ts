@@ -23,6 +23,7 @@ import {
 import { callReal, callRealStream } from "@/lib/realEngine";
 import { searchWeb, formatResearch, generateImageUrl } from "@/lib/runtime/tools";
 import { runJs } from "@/lib/runtime/exec";
+import { runCustomTool } from "@/lib/runtime/customTools";
 import { localComplete, localReady } from "@/lib/runtime/localBrain";
 import { callBackend, callBackendStream, generateEmbedding } from "@/lib/runtime/backendBrain";
 import { memoryStore, type MemoryEntry } from "@/lib/runtime/memoryStore";
@@ -526,19 +527,25 @@ export const useAria = create<AriaState>()(
             }
           }
 
+          // Build custom tool prompt for agents.
+          const customTools = useOS.getState().settings.customTools.filter((t) => t.enabled && t.name);
+          const toolsPrompt = customTools.length
+            ? `\n\nAvailable custom tools you can invoke:\n${customTools.map((t) => `  - ${t.name}: ${t.description || "No description"}\n    JSON params: ${t.parameters || "{}"}\n    Invoke by writing: \`${t.name}(<JSON args>)\``).join("\n")}`
+            : "";
+
           // One brain-agnostic call; null → fall back to the simulated engine.
           let full: string;
           if (task.agentId === "sage" && research) {
             const llm = await think(
               os.settings,
-              ag.system,
+              ag.system + toolsPrompt,
               `Mission: ${prompt}\n\nYou ran a web_search and got these LIVE results:\n\n${research}\n\nDeliver your subtask "${task.title}": synthesize the key findings in tight bullets and cite the sources.`,
             );
             full = llm ?? research;
           } else {
             const llm = await think(
               os.settings,
-              ag.system,
+              ag.system + toolsPrompt,
               `Mission: ${prompt}\n\nYour subtask: ${task.title}\nRespond as ${ag.name} (${ag.role}).`,
             );
             full = llm ?? simulateOutput(task.agentId, prompt);
@@ -557,6 +564,24 @@ export const useAria = create<AriaState>()(
                 from: "forge",
                 text: res.ok ? `✓ ran in ${res.durationMs}ms` : "execution failed",
               });
+            }
+          }
+
+          // Custom tool invocation: scan output for toolName(...)
+          for (const ct of customTools) {
+            const re = new RegExp(`\`${ct.name}\\(([^)]*)\\)\``);
+            const m = full.match(re);
+            if (m) {
+              let args: Record<string, unknown> = {};
+              try {
+                args = m[1].trim() ? JSON.parse(m[1]) : {};
+              } catch { /* will pass empty args */ }
+              post({ from: task.agentId, text: `🛠 ${ct.name}(…)` });
+              const res = await runCustomTool(ct, args, { agentId: task.agentId, missionPrompt: prompt });
+              full += res.ok
+                ? `\n\n**${ct.name} result:** ${res.summary}\n\`\`\`json\n${JSON.stringify(res.data)}\n\`\`\``
+                : `\n\n**${ct.name} error:** ${res.summary}`;
+              post({ from: task.agentId, text: res.ok ? `✓ ${ct.name} done` : `✗ ${ct.name} failed` });
             }
           }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useOS } from "@/store/useOS";
+import { useOS, type CustomToolDef } from "@/store/useOS";
 import { useAria } from "@/store/useAria";
 import { WALLPAPERS } from "@/lib/apps";
 import Icon from "@/components/ui/Icon";
@@ -349,6 +349,130 @@ function AgentsPanel() {
   );
 }
 
+function ToolsPanel() {
+  const customTools = useOS((s) => s.settings.customTools);
+  const set = useOS((s) => s.setSettings);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState<CustomToolDef>({
+    id: "", name: "", description: "", parameters: "", code: "", enabled: true,
+  });
+
+  const add = () => {
+    const id = crypto.randomUUID();
+    const tool: CustomToolDef = { ...draft, id, enabled: true };
+    set({ customTools: [...customTools, tool] });
+    setDraft({ id: "", name: "", description: "", parameters: "", code: "", enabled: true });
+    setEditing(id);
+  };
+
+  const save = (id: string, upd: Partial<CustomToolDef>) => {
+    set({ customTools: customTools.map((t) => (t.id === id ? { ...t, ...upd } : t)) });
+  };
+
+  const remove = (id: string) => {
+    set({ customTools: customTools.filter((t) => t.id !== id) });
+    if (editing === id) setEditing(null);
+  };
+
+  const toggle = (id: string) => {
+    set({ customTools: customTools.map((t) => (t.id === id ? { ...t, enabled: !t.enabled } : t)) });
+  };
+
+  const edit = (t: CustomToolDef) => {
+    setEditing(t.id);
+    setDraft(t);
+  };
+
+  return (
+    <>
+      {customTools.length === 0 && (
+        <p className="py-3 text-center text-[12px] text-text3">
+          No custom tools yet.
+        </p>
+      )}
+      {customTools.map((t) => (
+        <div key={t.id} className="border-b border-line py-2 last:border-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5">
+              <Switch on={t.enabled} onClick={() => toggle(t.id)} />
+              <span className="text-[13px] font-medium text-text0">{t.name || "(unnamed)"}</span>
+              {t.description && (
+                <span className="truncate text-[11px] text-text3">{t.description}</span>
+              )}
+            </div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => edit(t)}
+                className="rounded-lg p-1.5 text-text3 hover:bg-white/10 hover:text-text0"
+              >
+                <Icon name="Pencil" size={12} />
+              </button>
+              <button
+                onClick={() => remove(t.id)}
+                className="rounded-lg p-1.5 text-bad/60 hover:bg-bad/10 hover:text-bad"
+              >
+                <Icon name="Trash2" size={12} />
+              </button>
+            </div>
+          </div>
+          {editing === t.id && (
+            <div className="mt-2 space-y-1.5 pl-4">
+              <input
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                placeholder="Tool name"
+                className="w-full rounded-lg border border-line bg-black/30 px-2.5 py-1.5 text-[12px] text-text0 outline-none focus:border-accent"
+              />
+              <input
+                value={draft.description}
+                onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                placeholder="Description (shown to agents)"
+                className="w-full rounded-lg border border-line bg-black/30 px-2.5 py-1.5 text-[12px] text-text0 outline-none focus:border-accent"
+              />
+              <input
+                value={draft.parameters}
+                onChange={(e) => setDraft({ ...draft, parameters: e.target.value })}
+                placeholder="JSON Schema for parameters"
+                className="w-full rounded-lg border border-line bg-black/30 px-2.5 py-1.5 text-[12px] text-text0 outline-none focus:border-accent"
+              />
+              <textarea
+                value={draft.code}
+                onChange={(e) => setDraft({ ...draft, code: e.target.value })}
+                rows={5}
+                placeholder="// JavaScript implementation — use args, ctx, return { summary, data }"
+                className="w-full resize-none rounded-lg border border-line bg-black/30 px-2.5 py-1.5 text-[12px] text-text0 outline-none focus:border-accent scroll-thin font-mono"
+              />
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => {
+                    save(t.id, draft);
+                    setEditing(null);
+                  }}
+                  className="rounded-lg accent-grad px-2.5 py-1 text-[11px] font-medium text-white"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setEditing(null)}
+                  className="rounded-lg border border-line px-2.5 py-1 text-[11px] text-text2 hover:bg-white/5"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      <button
+        onClick={add}
+        className="mt-2 flex items-center gap-1 rounded-lg border border-dashed border-line px-3 py-1.5 text-[12px] text-text3 hover:border-accent hover:text-text0"
+      >
+        <Icon name="Plus" size={12} /> Add tool
+      </button>
+    </>
+  );
+}
+
 function ContextPanel() {
   const contextDocs = useAria((s) => s.contextDocs);
   const addContextDoc = useAria((s) => s.addContextDoc);
@@ -585,6 +709,10 @@ export default function Settings() {
 
         <Section title="Agents">
           <AgentsPanel />
+        </Section>
+
+        <Section title="Tools">
+          <ToolsPanel />
         </Section>
 
         <Section title="Context">

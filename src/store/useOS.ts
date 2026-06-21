@@ -54,6 +54,19 @@ export interface Settings {
   backendModel: string;
   /** custom agent system prompt overrides */
   customAgents: Record<string, { system: string }>;
+  /** user-registered custom tools */
+  customTools: CustomToolDef[];
+}
+
+export interface CustomToolDef {
+  id: string;
+  name: string;
+  description: string;
+  /** JSON string of parameter schema ({ name: { type, description } }) */
+  parameters: string;
+  /** JS code that runs when the tool is called */
+  code: string;
+  enabled: boolean;
 }
 
 interface OSState {
@@ -106,6 +119,7 @@ const DEFAULT_SETTINGS: Settings = {
   backendUrl: "http://localhost:11434",
   backendModel: "",
   customAgents: {},
+  customTools: [],
 };
 
 const MENU_BAR_H = 30;
