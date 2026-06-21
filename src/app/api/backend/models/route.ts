@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { guard } from "@/lib/api-guard";
 
 export async function GET(req: NextRequest) {
+  const g = guard(req);
+  if (g) return g;
   const backendUrl = req.nextUrl.searchParams.get("url");
   if (!backendUrl) {
     return NextResponse.json({ error: "Missing backend URL" }, { status: 400 });

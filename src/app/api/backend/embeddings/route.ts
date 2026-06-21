@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { guard } from "@/lib/api-guard";
 
 export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
+  const g = guard(req);
+  if (g) return g;
+
   let body: { model?: string; prompt: string; backendUrl: string };
   try {
     body = (await req.json()) as typeof body;
