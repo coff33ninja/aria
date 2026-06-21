@@ -354,59 +354,85 @@ const WIDGET_MAP: Record<WidgetId, (props: { openApp: (id: AppId) => void }) => 
 export default function DesktopWidgets() {
   const openApp = useOS((s) => s.openApp);
   const activeIds = useOS((s) => s.settings.widgets);
-  const offsets = useOS((s) => s.settings.widgetPositions);
+  const stored = useOS((s) => s.settings.widgetPositions);
   const setSettings = useOS((s) => s.setSettings);
-  const dragRef = useRef<{ ox: number; oy: number; ox0: number; oy0: number } | null>(null);
-  const [liveDelta, setLiveDelta] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{
+    id: WidgetId; offX: number; offY: number; startX: number; startY: number;
+  } | null>(null);
+  const [liveDrag, setLiveDrag] = useState<{ x: number; y: number } | null>(null);
 
   const widgets = ALL_WIDGETS.filter((w) => activeIds.includes(w.id));
+  const dragId = dragRef.current?.id ?? null;
+  const undragged = widgets.filter((w) => !stored[w.id]);
+  const dragged = widgets.filter((w) => stored[w.id]);
 
   return (
-    <div className="pointer-events-none absolute right-5 top-12 z-0 flex w-[230px] flex-col gap-4">
-      {widgets.map((w) => {
+    <div className="pointer-events-none fixed right-5 top-12 z-0 flex flex-col items-end gap-4">
+      <div
+        className="flex max-h-[calc(100dvh-5rem)] flex-col flex-wrap-reverse gap-4"
+        style={{ alignContent: "flex-start" }}
+      >
+        {undragged.map((w) => {
+          const render = WIDGET_MAP[w.id];
+          if (!render) return null;
+          const isDragging = w.id === dragId;
+
+          if (isDragging) {
+            const dx = liveDrag?.x ?? 0;
+            const dy = liveDrag?.y ?? 0;
+            return (
+              <div
+                key={w.id}
+                className="pointer-events-auto fixed"
+                style={{
+                  left: (dragRef.current?.startX ?? 0) + dx,
+                  top: (dragRef.current?.startY ?? 0) + dy,
+                  width: 230, zIndex: 50,
+                }}
+              >
+                <div style={{ pointerEvents: "auto" }}>{render({ openApp })}</div>
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={w.id}
+              className="pointer-events-auto w-[230px] shrink-0"
+              onPointerDown={(e) => {
+                if ((e.target as HTMLElement).closest("input, textarea, button, a")) return;
+                const el = e.currentTarget as HTMLElement;
+                const rect = el.getBoundingClientRect();
+                dragRef.current = { id: w.id, offX: e.clientX - rect.left, offY: e.clientY - rect.top, startX: rect.left, startY: rect.top };
+                el.setPointerCapture(e.pointerId);
+                addDragListeners(el, dragRef, setLiveDrag, setSettings, stored);
+              }}
+            >
+              <div style={{ pointerEvents: "auto" }}>{render({ openApp })}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {dragged.map((w) => {
         const render = WIDGET_MAP[w.id];
         if (!render) return null;
-        const offset = offsets[w.id];
-        const delta = liveDelta ?? { x: 0, y: 0 };
-        const tx = (offset?.x ?? 0) + delta.x;
-        const ty = (offset?.y ?? 0) + delta.y;
+        const pos = stored[w.id]!;
+        const isDragging = w.id === dragId;
+        const dx = isDragging && liveDrag ? liveDrag.x : 0;
+        const dy = isDragging && liveDrag ? liveDrag.y : 0;
 
         return (
           <div
             key={w.id}
-            className="pointer-events-auto"
-            style={{
-              transform: tx || ty ? `translate(${tx}px,${ty}px)` : undefined,
-              zIndex: liveDelta ? 50 : undefined,
-            }}
+            className="pointer-events-auto fixed"
+            style={{ left: pos.x + dx, top: pos.y + dy, width: 230, zIndex: isDragging ? 50 : 1 }}
             onPointerDown={(e) => {
               if ((e.target as HTMLElement).closest("input, textarea, button, a")) return;
               const el = e.currentTarget as HTMLElement;
-              dragRef.current = { ox: e.clientX, oy: e.clientY, ox0: offset?.x ?? 0, oy0: offset?.y ?? 0 };
+              dragRef.current = { id: w.id, offX: e.clientX - pos.x, offY: e.clientY - pos.y, startX: pos.x, startY: pos.y };
               el.setPointerCapture(e.pointerId);
-
-              const onMove = (ev: PointerEvent) => {
-                const d = dragRef.current;
-                if (!d) return;
-                setLiveDelta({ x: ev.clientX - d.ox, y: ev.clientY - d.oy });
-              };
-
-              const onUp = (ev: PointerEvent) => {
-                const d = dragRef.current;
-                if (!d) return;
-                const nx = d.ox0 + ev.clientX - d.ox;
-                const ny = d.oy0 + ev.clientY - d.oy;
-                if (Math.abs(nx) > 5 || Math.abs(ny) > 5) {
-                  setSettings({ widgetPositions: { ...useOS.getState().settings.widgetPositions, [w.id]: { x: nx, y: ny } } });
-                }
-                setLiveDelta(null);
-                dragRef.current = null;
-                el.removeEventListener("pointermove", onMove);
-                el.removeEventListener("pointerup", onUp);
-              };
-
-              el.addEventListener("pointermove", onMove);
-              el.addEventListener("pointerup", onUp);
+              addDragListeners(el, dragRef, setLiveDrag, setSettings, stored);
             }}
           >
             <div style={{ pointerEvents: "auto" }}>{render({ openApp })}</div>
@@ -415,4 +441,37 @@ export default function DesktopWidgets() {
       })}
     </div>
   );
+}
+
+function addDragListeners(
+  el: HTMLElement,
+  dragRef: React.MutableRefObject<{ id: WidgetId; offX: number; offY: number; startX: number; startY: number } | null>,
+  setLiveDrag: (v: { x: number; y: number } | null) => void,
+  setSettings: (s: Partial<Settings>) => void,
+  stored: Partial<Record<WidgetId, { x: number; y: number }>>,
+) {
+  const onMove = (ev: PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    setLiveDrag({ x: ev.clientX - d.offX, y: ev.clientY - d.offY });
+  };
+
+  const onUp = (ev: PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const nx = ev.clientX - d.offX;
+    const ny = ev.clientY - d.offY;
+    const prevX = stored[d.id]?.x ?? d.startX;
+    const prevY = stored[d.id]?.y ?? d.startY;
+    if (Math.abs(nx - prevX) > 5 || Math.abs(ny - prevY) > 5) {
+      setSettings({ widgetPositions: { ...useOS.getState().settings.widgetPositions, [d.id]: { x: nx, y: ny } } });
+    }
+    setLiveDrag(null);
+    dragRef.current = null;
+    el.removeEventListener("pointermove", onMove);
+    el.removeEventListener("pointerup", onUp);
+  };
+
+  el.addEventListener("pointermove", onMove);
+  el.addEventListener("pointerup", onUp);
 }
